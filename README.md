@@ -320,5 +320,8 @@ The build order is contracts → web → server. Angular and Node consume the bu
   Review the warning details; course files are not deleted automatically.
 - **Generation is disabled with a key banner:** run `npm run key:set`, then use **Recheck** in the
   banner (or reload the page). The key itself is never displayed.
+- **Generation fails with `AI_NETWORK` even though the key is valid:** see
+  [KI-001](./docs/known-issues.md#ki-001-deepseek-streaming-always-fails-with-ai_network). This is a
+  known DeepSeek `usage: null` parsing bug, not a connectivity problem.
 - **Playwright cannot find Chromium:** run `npm run e2e:install`.
 - **Angular dev server shows an API error:** confirm the server is listening on port 4310.
