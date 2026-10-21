@@ -1,8 +1,7 @@
-import { expect, test } from '@playwright/test';
 import http from 'node:http';
 import { MUTATION_HEADER_NAME, MUTATION_HEADER_VALUE } from '@ccb/contracts';
 
-const baseURL = 'http://127.0.0.1:4310';
+import { expect, test } from './support/app-fixtures';
 
 interface RawRequestOptions {
   headers?: Record<string, string>;
@@ -10,15 +9,18 @@ interface RawRequestOptions {
 }
 
 function rawRequest(
+  baseURL: string,
   method: string,
   route: string,
   options: RawRequestOptions = {},
 ): Promise<{ status: number; text: string }> {
+  const url = new URL(baseURL);
+
   return new Promise((resolve, reject) => {
     const request = http.request(
       {
-        hostname: '127.0.0.1',
-        port: 4310,
+        hostname: url.hostname,
+        port: Number(url.port),
         path: route,
         method,
         headers: options.headers ?? {},
@@ -40,6 +42,8 @@ function rawRequest(
   });
 }
 
+test.use({ appKey: 'security' });
+
 test.describe('local service security', () => {
   test('serves CSP headers with a matching Angular nonce', async ({ request }) => {
     const response = await request.get('/');
@@ -58,14 +62,14 @@ test.describe('local service security', () => {
     expect(response.headers()['cross-origin-opener-policy']).toBe('same-origin');
   });
 
-  test('rejects mutations without the CSRF header and non-local origins', async () => {
-    const missing = await rawRequest('POST', '/api/subjects', {
+  test('rejects mutations without the CSRF header and non-local origins', async ({ app }) => {
+    const missing = await rawRequest(app.baseURL, 'POST', '/api/subjects', {
       body: JSON.stringify({ name: 'Rejected' }),
     });
     expect(missing.status).toBe(403);
     expect(JSON.parse(missing.text).error.code).toBe('FORBIDDEN');
 
-    const evilOrigin = await rawRequest('POST', '/api/subjects', {
+    const evilOrigin = await rawRequest(app.baseURL, 'POST', '/api/subjects', {
       headers: {
         [MUTATION_HEADER_NAME]: MUTATION_HEADER_VALUE,
         'content-type': 'application/json',
@@ -75,20 +79,20 @@ test.describe('local service security', () => {
     });
     expect(evilOrigin.status).toBe(403);
 
-    const evilHost = await rawRequest('GET', '/api/health', {
+    const evilHost = await rawRequest(app.baseURL, 'GET', '/api/health', {
       headers: { Host: 'attacker.example' },
     });
     expect(evilHost.status).toBe(403);
   });
 
-  test('rejects a mutation sent by page code with the wrong header', async ({ browser }) => {
+  test('rejects a mutation sent by page code with the wrong header', async ({ app, browser }) => {
     const context = await browser.newContext({
       extraHTTPHeaders: { [MUTATION_HEADER_NAME]: 'wrong' },
     });
     const page = await context.newPage();
 
     try {
-      await page.goto(baseURL);
+      await page.goto(app.baseURL);
       const status = await page.evaluate(async () => {
         const response = await fetch('/api/subjects', {
           method: 'POST',

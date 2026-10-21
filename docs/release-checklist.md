@@ -5,7 +5,7 @@
 - [ ] Node version satisfies `^24.15 || >=26`; npm is 11+.
 - [ ] `npm ci` succeeds from a clean checkout.
 - [ ] `npm run verify` passes, including coverage thresholds and the 350 KiB gzip bundle gate.
-- [ ] `npm run e2e` passes in Chromium, Firefox, and WebKit.
+- [ ] `npm run e2e:all` passes in Chromium, Firefox, and WebKit.
 - [ ] `npm run smoke` passes against the production build.
 - [ ] `npm run doctor` passes with a real key and reports the web build as present.
 - [ ] Manual QA checklist reviewed and recorded.

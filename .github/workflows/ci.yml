@@ -4,18 +4,20 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
 
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  CI: '1'
+  CCB_NO_OPEN: '1'
+
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
-    env:
-      CI: '1'
-      CCB_NO_OPEN: '1'
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v5
 
@@ -27,14 +29,38 @@ jobs:
       - run: npm ci
       - run: npm run verify
 
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
       - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium firefox webkit
+        env:
+          RUN_FULL_E2E: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main') }}
+        run: |
+          if [ "$RUN_FULL_E2E" = "true" ]; then
+            npx playwright install --with-deps chromium firefox webkit
+          else
+            npx playwright install --with-deps chromium
+          fi
 
       - name: End-to-end tests
-        run: npm run e2e
-
-      - name: Release smoke
-        run: npm run smoke
+        env:
+          RUN_FULL_E2E: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main') }}
+        run: |
+          if [ "$RUN_FULL_E2E" = "true" ]; then
+            npm run e2e:all
+          else
+            npm run e2e
+          fi
 
       - name: Upload Playwright report
         if: always()
@@ -44,3 +70,18 @@ jobs:
           path: playwright-report/
           retention-days: 14
           if-no-files-found: ignore
+
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+      - run: node scripts/ensure-build.mjs
+      - run: npm run smoke

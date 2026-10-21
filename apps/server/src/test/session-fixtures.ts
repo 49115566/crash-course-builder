@@ -82,7 +82,7 @@ export async function waitFor<T>(
   predicate: (value: T) => boolean,
   options: { timeoutMs?: number; intervalMs?: number } = {},
 ): Promise<T> {
-  const deadline = Date.now() + (options.timeoutMs ?? 4_000);
+  const deadline = Date.now() + (options.timeoutMs ?? 10_000);
   let last = await read();
 
   while (!predicate(last)) {

@@ -23,7 +23,7 @@ mkdirSync(libraryRoot, { recursive: true });
 mkdirSync(dataDir, { recursive: true });
 mkdirSync(configDir, { recursive: true });
 
-const child = spawn(process.execPath, [serverEntry], {
+const child = spawn(process.execPath, [serverEntry, '--require-web-build'], {
   cwd: repoRoot,
   stdio: 'inherit',
   env: {

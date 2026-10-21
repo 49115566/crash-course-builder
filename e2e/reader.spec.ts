@@ -1,7 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, test } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
 
+import { expect, test } from './support/app-fixtures';
 import { seedCourse } from './support/library-fixtures';
 
 const RICH_COURSE = `# Orbital Mechanics: A Crash Course
@@ -43,13 +43,17 @@ $$ \\Delta v = \\sqrt{\\frac{2\\mu}{r_1}} $$
 > Slow down to speed up in orbital mechanics.
 `;
 
+test.use({ appKey: 'reader' });
+
 test.describe.serial('course reader', () => {
   test.setTimeout(120_000);
 
   test('renders a safe, linked course and adapts to mobile and print', async ({
+    app,
     page,
     request,
   }) => {
+    const appOrigin = new URL(app.baseURL).origin;
     const consoleErrors: string[] = [];
     const pageErrors: string[] = [];
     const externalRequests: string[] = [];
@@ -60,11 +64,7 @@ test.describe.serial('course reader', () => {
     page.on('pageerror', (error) => pageErrors.push(error.message));
     page.on('request', (requestEvent) => {
       const url = new URL(requestEvent.url());
-      if (
-        url.origin !== 'http://127.0.0.1:4310' &&
-        url.protocol !== 'data:' &&
-        url.protocol !== 'blob:'
-      ) {
+      if (url.origin !== appOrigin && url.protocol !== 'data:' && url.protocol !== 'blob:') {
         externalRequests.push(requestEvent.url());
       }
     });

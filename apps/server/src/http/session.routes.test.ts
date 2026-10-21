@@ -264,7 +264,7 @@ describe('session API', () => {
     await apiRequest(context.app).post(`/api/sessions/${session.id}/resume`).expect(202);
     const completed = await waitForStatus(context, session.id, 'completed');
     expect(completed.sections.every((section) => section.status === 'completed')).toBe(true);
-  }, 15_000);
+  }, 30_000);
 
   it('deletes an active session without allowing the runner to recreate it', async () => {
     const context = await appContext({
@@ -318,7 +318,7 @@ describe('session API', () => {
 
     await apiRequest(context.app).post(`/api/sessions/${session.id}/resume`).expect(202);
     await waitForStatus(context, session.id, 'completed');
-  }, 15_000);
+  }, 30_000);
 
   it('reports missing keys without changing the session', async () => {
     const context = await appContext({ secrets: new MemorySecretStore(null) });

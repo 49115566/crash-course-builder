@@ -1,10 +1,12 @@
-import { expect, test } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { readFile, rename } from 'node:fs/promises';
 import path from 'node:path';
 
+import { expect, test } from './support/app-fixtures';
 import { libraryRoot } from './support/library-paths';
 import { readLibraryOrder, seedCourse } from './support/library-fixtures';
+
+test.use({ appKey: 'library' });
 
 test.describe.serial('library without AI', () => {
   test('creates subjects and persists the library order', async ({ page }) => {
