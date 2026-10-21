@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 
+import { OutlineError } from '../domain/outline-errors.js';
 import { AppError, NotFoundError, toErrorEnvelope } from './errors.js';
 
 describe('toErrorEnvelope', () => {
@@ -74,6 +75,27 @@ describe('toErrorEnvelope', () => {
     expect(result.status).toBe(413);
     expect(result.body.error.code).toBe('VALIDATION_FAILED');
     expect(result.body.error.message).toContain('too large');
+  });
+
+  it('maps invalid outlines with structured issues', () => {
+    const result = toErrorEnvelope(
+      new OutlineError('The outline has 1 sections. Regenerate the outline.', [
+        {
+          code: 'TOO_FEW_SECTIONS',
+          message: 'Found 1 sections; the minimum is 2.',
+        },
+      ]),
+    );
+
+    expect(result.status).toBe(422);
+    expect(result.body.error).toMatchObject({
+      code: 'OUTLINE_INVALID',
+      message: 'The outline has 1 sections. Regenerate the outline.',
+      retryable: false,
+      details: {
+        issues: [{ code: 'TOO_FEW_SECTIONS' }],
+      },
+    });
   });
 
   it('hides unknown error details', () => {

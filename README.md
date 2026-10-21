@@ -6,7 +6,9 @@ computer.
 
 ## Current status
 
-Milestone 1 (Library) is implemented:
+Milestones 1 (Library) and 2 (Prompt and outline domain) are implemented.
+
+Milestone 1:
 
 - Shared Zod contracts for subjects, courses, metadata, library order, and API requests.
 - A filesystem-backed course library with sanitized folder names, stable UUIDs, atomic writes,
@@ -19,9 +21,20 @@ Milestone 1 (Library) is implemented:
 - Unit, API integration, filesystem integration, and Playwright workflow tests, including a
   temporary-library no-AI workflow and axe accessibility checks.
 
-Course creation, AI generation, sessions, the reader, and the key-management CLI arrive in later
-milestones. **No AI key is required yet.** The library can be managed now; course cards appear for
-valid course folders already present on disk.
+Milestone 2:
+
+- Prompt contract v1 with exact starting and continuation prompts, prior-course context rules,
+  additional-instruction fidelity, word budgets, and token estimates.
+- A `marked` lexer-based outline parser with tolerant recovery, strict validation, actionable
+  `OUTLINE_INVALID` errors, and fixtures for malformed and adversarial responses.
+- Standalone `outline.md` rendering and a canonical course assembler that removes Mermaid, images,
+  duplicate headings, and dangerous HTML while producing schema-valid `meta.json`.
+- A deterministic fake AI provider with chunking, delays, abort support, and failure injection.
+- A full pipeline test that generates, writes, reads, and rescans all three course files.
+
+Sessions, API routes for generation, the real DeepSeek adapter, the wizard, the reader, and the
+key-management CLI arrive in later milestones. **No AI key is required yet.** The library can be
+managed now; course cards appear for valid course folders already present on disk.
 
 ## Prerequisites
 
@@ -141,8 +154,9 @@ Configuration is read from environment variables. No `.env` file is loaded autom
 
 ```text
 apps/web/          Angular application
-apps/server/       Express API, filesystem library, and static file server
-packages/contracts Shared Zod schemas, DTOs, error codes, and constants
+apps/server/       Express API, filesystem library, prompt/outline domain, and fake AI adapter
+packages/contracts Shared Zod schemas, DTOs, error codes, prompt/outline types, and constants
+docs/              Prompt contract, architecture decisions, and future API/architecture notes
 e2e/               Playwright specs, helpers, and isolated server launcher
 ```
 

@@ -4,6 +4,7 @@ import { ZodError } from 'zod';
 import type { ApiError, ErrorCode } from '@ccb/contracts';
 
 import { LibraryError } from '../domain/library-errors.js';
+import { OutlineError } from '../domain/outline-errors.js';
 import { getRequestId } from './response.js';
 
 const STATUS_BY_CODE: Record<ErrorCode, number> = {
@@ -125,6 +126,15 @@ function validationEnvelope(error: ZodError): ErrorEnvelopeResult {
 }
 
 export function toErrorEnvelope(error: unknown): ErrorEnvelopeResult {
+  if (error instanceof OutlineError) {
+    return toErrorEnvelope(
+      new AppError('OUTLINE_INVALID', error.message, {
+        details: { issues: error.issues },
+        cause: error,
+      }),
+    );
+  }
+
   if (error instanceof LibraryError) {
     return toErrorEnvelope(
       new AppError(error.code, error.message, {

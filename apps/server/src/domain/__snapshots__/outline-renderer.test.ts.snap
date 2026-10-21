@@ -1,0 +1,23 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`outline renderer > matches the outline snapshot 1`] = `
+"# Vector Databases: A 30-Minute Crash Course
+
+> Choose, build, and operate a vector search system with confidence.
+
+**Audience:** software engineers
+
+**Summary:** A practical tour of embeddings, indexes, retrieval quality, and operations.
+
+## Course outline
+
+1. **Foundations**
+   - Embeddings
+   - Similarity metrics
+
+2. **Retrieval quality**
+   - Recall
+   - Hybrid search
+   - Re-ranking
+"
+`;
