@@ -1,4 +1,4 @@
-import { test as base } from '@playwright/test';
+import { test as base, type Locator } from '@playwright/test';
 import { spawn, type ChildProcess } from 'node:child_process';
 import net from 'node:net';
 import path from 'node:path';
@@ -32,7 +32,7 @@ const MODE_ENV: Record<AppMode, Record<string, string>> = {
     CCB_FAKE_AI_CHUNK_SIZE: '1000',
   },
   streaming: {
-    CCB_FAKE_AI_DELAY_MS: '15',
+    CCB_FAKE_AI_DELAY_MS: '35',
     CCB_FAKE_AI_CHUNK_SIZE: '20',
   },
   failure: {
@@ -73,6 +73,11 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
 });
 
 export { expect } from '@playwright/test';
+
+export async function activate(locator: Locator): Promise<void> {
+  await locator.waitFor({ state: 'attached' });
+  await locator.dispatchEvent('click');
+}
 
 interface StartedApp extends RunningApp {
   child: ChildProcess;

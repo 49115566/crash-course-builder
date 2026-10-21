@@ -1,4 +1,4 @@
-import { expect, test } from './support/app-fixtures';
+import { activate, expect, test } from './support/app-fixtures';
 import {
   approveOutline,
   generateOutline,
@@ -39,7 +39,7 @@ test.describe.serial('course generation controls', () => {
     await generateOutline(page);
     await approveOutline(page);
 
-    await page.getByRole('button', { name: 'Stop writing' }).click();
+    await activate(page.getByRole('button', { name: 'Stop writing' }));
     await page.getByRole('dialog').getByRole('button', { name: 'Stop writing' }).click();
     await expect(page.getByRole('heading', { name: 'Writing paused' })).toBeVisible({
       timeout: 20_000,

@@ -1,4 +1,4 @@
-import { expect, test } from './support/app-fixtures';
+import { activate, expect, test } from './support/app-fixtures';
 import {
   approveOutline,
   generateOutline,
@@ -31,7 +31,7 @@ test('resets inputs from outline review and shows the regeneration guard', async
 
   await generateOutline(page);
   await approveOutline(page);
-  await page.getByRole('link', { name: 'View outline' }).click();
+  await activate(page.getByRole('link', { name: 'View outline' }));
   await expect(page.getByText('Writing has already started')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Regenerate outline' })).toHaveCount(0);
 
