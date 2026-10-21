@@ -6,8 +6,8 @@ computer.
 
 ## Current status
 
-Milestones 1 (Library), 2 (Prompt and outline domain), 3 (DeepSeek, sessions, streaming), and 4
-(Wizard UX) are implemented.
+Milestones 1 (Library), 2 (Prompt and outline domain), 3 (DeepSeek, sessions, streaming), 4
+(Wizard UX), and 5 (Reader) are implemented.
 
 Milestone 1:
 
@@ -63,8 +63,21 @@ Milestone 4:
 - Wizard, realtime, API, and accessibility tests plus isolated Playwright servers for happy path,
   failure/resume, keyless, and global-busy scenarios.
 
-The reader screen arrives in Milestone 5. The library and wizard remain fully usable without an AI
-key, although generation is disabled until a key is configured.
+Milestone 5:
+
+- A lazy-loaded `/courses/:id` reader that opens any saved course directly from its three files on
+  disk, with no AI key required.
+- Sanitized GFM Markdown rendering with tables, heading anchors, responsive code blocks, and
+  self-hosted KaTeX math. Raw HTML, remote images, and unsafe link protocols are removed.
+- A book-like cover, an “In this course” outline card, a sticky desktop contents sidebar, a mobile
+  contents drawer, and an ephemeral reading-progress indicator with scroll tracking.
+- Reading progress is never persisted. The reader is read-only; course management stays in the
+  library.
+- Print styles, loading skeletons, incomplete-file and not-found states, accessible overflow actions,
+  and axe/Playwright coverage across desktop, mobile, and print.
+
+The library, wizard, and reader remain fully usable without an AI key, although generation is
+disabled until a key is configured.
 
 ## Prerequisites
 
@@ -142,6 +155,21 @@ Failed calls are shown as **Paused — needs attention** and never retry automat
 course is being generated, the second session stays a draft and the UI links to the active course.
 Closing the app during generation turns the session into a paused/interrupted session on restart.
 Discarding a session never deletes a course that has already been saved.
+
+## Reading courses
+
+Open any course from the library card, or use **Read course** after generation. Reading works
+without an AI key.
+
+- Courses render from `course.md` with safe Markdown, GFM tables, code blocks, and self-hosted KaTeX
+  math. Raw HTML, remote images, and unsafe links are removed.
+- The “In this course” card at the top links to every numbered section. Wide screens also show a
+  sticky contents sidebar; narrow screens use a focus-trapped contents drawer.
+- Scrollspy, the reading-progress line, and back-to-top are in-memory only. No reading progress is
+  saved or sent anywhere.
+- The overflow menu can print the course, copy its link, or return to the library. Print styles
+  remove application chrome and leave the course document.
+- A missing `course.md` or `outline.md` produces an actionable error without modifying the folder.
 
 ## Sessions
 
@@ -292,5 +320,8 @@ The build order is contracts → web → server. Angular and Node consume the bu
   Review the warning details; course files are not deleted automatically.
 - **Generation is disabled with a key banner:** run `npm run key:set`, then use **Recheck** in the
   banner (or reload the page). The key itself is never displayed.
+- **Generation fails with `AI_NETWORK` even though the key is valid:** see
+  [KI-001](./docs/known-issues.md#ki-001-deepseek-streaming-always-fails-with-ai_network). This is a
+  known DeepSeek `usage: null` parsing bug, not a connectivity problem.
 - **Playwright cannot find Chromium:** run `npm run e2e:install`.
 - **Angular dev server shows an API error:** confirm the server is listening on port 4310.

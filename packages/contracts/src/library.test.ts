@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { COURSE_METADATA, LIBRARY_INDEX, SUBJECT_METADATA } from './library.test-data.js';
 import {
+  courseDetailSchema,
   courseMetadataSchema,
   createSubjectRequestSchema,
   deleteSubjectRequestSchema,
@@ -69,6 +70,23 @@ describe('library disk schemas', () => {
         totalCourses: 1,
       }).success,
     ).toBe(true);
+  });
+
+  it('accepts a complete course detail payload and rejects missing files', () => {
+    expect(
+      courseDetailSchema.safeParse({
+        meta: COURSE_METADATA,
+        outlineMarkdown: '# Outline\n',
+        courseMarkdown: '# Course\n',
+      }).success,
+    ).toBe(true);
+
+    expect(
+      courseDetailSchema.safeParse({
+        meta: COURSE_METADATA,
+        courseMarkdown: '# Course\n',
+      }).success,
+    ).toBe(false);
   });
 });
 

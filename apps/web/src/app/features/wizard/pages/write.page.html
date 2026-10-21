@@ -62,7 +62,10 @@
   </section>
 
   <footer class="write__success-actions">
-    <a class="ccb-button ccb-button--primary" routerLink="/">Back to library</a>
+    <a class="ccb-button ccb-button--primary" [routerLink]="['/courses', session.courseId]">
+      Read course
+    </a>
+    <a class="ccb-button ccb-button--secondary" routerLink="/">Back to library</a>
   </footer>
   } @else { @if (needsAttention() || isPaused()) {
   <ccb-attention-panel

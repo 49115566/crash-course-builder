@@ -227,6 +227,84 @@ describe('FsLibraryRepository', () => {
     });
   });
 
+  describe('course reading', () => {
+    it('returns the exact course files and metadata from disk', async () => {
+      const subject = await repository.createSubject('Computer Science');
+      const courseMarkdown = '# Vector Databases\n\nA practical course with $x^2$ and tables.\n';
+      const outlineMarkdown = '# Vector Databases\n\n1. **Foundations**\n';
+      await seedCourse(
+        path.join(root, 'Computer Science'),
+        makeCourseMetadata(IDS.courseA, {
+          id: subject.subject.id,
+          name: 'Computer Science',
+        }),
+        { courseMarkdown, outlineMarkdown },
+      );
+
+      const result = await repository.readCourse(IDS.courseA);
+
+      expect(result.meta.id).toBe(IDS.courseA);
+      expect(result.courseMarkdown).toBe(courseMarkdown);
+      expect(result.outlineMarkdown).toBe(outlineMarkdown);
+    });
+
+    it('returns NOT_FOUND for unknown and incomplete courses', async () => {
+      const subject = await repository.createSubject('Computer Science');
+      await seedCourse(
+        path.join(root, 'Computer Science'),
+        makeCourseMetadata(IDS.courseA, {
+          id: subject.subject.id,
+          name: 'Computer Science',
+        }),
+        { courseMarkdown: null },
+      );
+      await seedCourse(
+        path.join(root, 'Computer Science'),
+        makeCourseMetadata(
+          IDS.courseB,
+          {
+            id: subject.subject.id,
+            name: 'Computer Science',
+          },
+          { topic: 'Graph Databases' },
+        ),
+        { folderName: 'Graph Databases', outlineMarkdown: null },
+      );
+
+      await expect(repository.readCourse(IDS.courseC)).rejects.toMatchObject({
+        code: 'NOT_FOUND',
+      });
+      await expect(repository.readCourse(IDS.courseA)).rejects.toMatchObject({
+        code: 'NOT_FOUND',
+        details: { files: ['course.md'] },
+      });
+      await expect(repository.readCourse(IDS.courseB)).rejects.toMatchObject({
+        code: 'NOT_FOUND',
+        details: { files: ['outline.md'] },
+      });
+    });
+
+    it('refuses to follow symlinked course files', async () => {
+      const subject = await repository.createSubject('Computer Science');
+      const coursePath = await seedCourse(
+        path.join(root, 'Computer Science'),
+        makeCourseMetadata(IDS.courseA, {
+          id: subject.subject.id,
+          name: 'Computer Science',
+        }),
+      );
+      const target = path.join(root, 'outside.md');
+      await writeFile(target, '# Outside\n', 'utf8');
+      await rm(path.join(coursePath, 'course.md'));
+      await symlink(target, path.join(coursePath, 'course.md'));
+
+      await expect(repository.readCourse(IDS.courseA)).rejects.toMatchObject({
+        code: 'NOT_FOUND',
+        details: { files: ['course.md'] },
+      });
+    });
+  });
+
   describe('staging safety', () => {
     it('refuses to delete through a symlinked staging directory', async () => {
       const subject = await repository.createSubject('Subject');

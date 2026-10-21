@@ -1,17 +1,20 @@
 import { CdkMenuModule } from '@angular/cdk/menu';
 import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import type { CourseSummary } from '@ccb/contracts';
 
 @Component({
   selector: 'ccb-course-card',
-  imports: [CdkMenuModule, DatePipe],
+  imports: [CdkMenuModule, DatePipe, RouterLink],
   template: `
     <article class="course-card">
       <div class="course-card__top">
         <div class="course-card__headline">
           <p class="course-card__topic">{{ course().topic }}</p>
-          <h3 class="course-card__title">{{ course().title }}</h3>
+          <h3 class="course-card__title">
+            <a [routerLink]="['/courses', course().id]">{{ course().title }}</a>
+          </h3>
         </div>
 
         <button
@@ -26,6 +29,9 @@ import type { CourseSummary } from '@ccb/contracts';
 
         <ng-template #courseMenu>
           <div class="ccb-menu" cdkMenu>
+            <a class="ccb-menu__item" cdkMenuItem [routerLink]="['/courses', course().id]">
+              Open course
+            </a>
             <button type="button" class="ccb-menu__item" cdkMenuItem (click)="move.emit(course())">
               Move to another subject…
             </button>

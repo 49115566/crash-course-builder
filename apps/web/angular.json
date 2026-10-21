@@ -36,6 +36,7 @@
               "@fontsource-variable/inter/index.css",
               "@fontsource-variable/source-serif-4/wght.css",
               "@fontsource-variable/source-serif-4/wght-italic.css",
+              "katex/dist/katex.min.css",
               "src/styles.scss"
             ]
           },

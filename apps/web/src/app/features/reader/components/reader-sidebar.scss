@@ -1,0 +1,30 @@
+:host {
+  display: block;
+}
+
+.reader-sidebar {
+  position: sticky;
+  top: calc(var(--reader-toolbar-height) + var(--ccb-space-2));
+  display: grid;
+  gap: var(--ccb-space-1);
+  max-height: calc(100dvh - var(--reader-toolbar-height) - var(--ccb-space-3));
+  overflow: auto;
+  padding: 0.25rem 0 0.75rem;
+  scrollbar-width: thin;
+}
+
+.reader-sidebar__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--ccb-space-1);
+  padding-bottom: var(--ccb-space-1);
+  border-bottom: 1px solid var(--ccb-line);
+}
+
+.reader-sidebar__meta {
+  margin: 0;
+  color: var(--ccb-ink-muted);
+  font-size: 0.7rem;
+  font-weight: 600;
+}
