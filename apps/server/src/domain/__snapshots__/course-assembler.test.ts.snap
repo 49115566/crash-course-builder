@@ -1,0 +1,91 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`assembleCourse > matches the assembled course snapshot 1`] = `
+{
+  "courseMarkdown": "# Vector Databases: A 30-Minute Crash Course
+
+> Choose, build, and operate a vector search system with confidence.
+
+**Audience:** software engineers
+
+**Summary:** A practical tour of embeddings, indexes, and operations.
+
+## 1. Foundations
+
+An embedding maps content to a vector. Similarity commonly uses $\\cos(\\theta)$.
+
+### Key terms
+
+- **Embedding:** a vector representation.
+- **Similarity:** a distance or angle between vectors.
+
+## 2. Indexing
+
+Here is the section.
+
+HNSW builds a navigable graph. Inverted-file indexes trade recall for speed.
+
+### Deep dive
+
+Filters can reduce the candidate set before ranking.
+
+## 3. Operations
+
+### No top heading
+
+Content can start with a subsection. Monitor latency and recall together.
+",
+  "metadata": {
+    "ai": {
+      "model": "deepseek-chat",
+      "provider": "deepseek",
+    },
+    "audience": "software engineers",
+    "createdAt": "2026-01-02T00:00:00.000Z",
+    "id": "123e4567-e89b-42d3-a456-426614174010",
+    "instructions": "Use e-commerce examples throughout.",
+    "promptVersion": "1",
+    "schemaVersion": 1,
+    "stats": {
+      "readingMinutes": 1,
+      "sections": 3,
+      "words": 99,
+    },
+    "status": "complete",
+    "subject": {
+      "id": "123e4567-e89b-42d3-a456-42661417400a",
+      "name": "Computer Science",
+    },
+    "title": "Vector Databases: A 30-Minute Crash Course",
+    "topic": "Vector Databases",
+    "updatedAt": "2026-01-03T00:00:00.000Z",
+  },
+  "outlineMarkdown": "# Vector Databases: A 30-Minute Crash Course
+
+> Choose, build, and operate a vector search system with confidence.
+
+**Audience:** software engineers
+
+**Summary:** A practical tour of embeddings, indexes, and operations.
+
+## Course outline
+
+1. **Foundations**
+   - Embeddings
+   - Similarity
+
+2. **Indexing**
+   - HNSW
+   - Filters
+
+3. **Operations**
+   - Backups
+   - Monitoring
+",
+  "stats": {
+    "readingMinutes": 1,
+    "sections": 3,
+    "words": 99,
+  },
+}
+`;
