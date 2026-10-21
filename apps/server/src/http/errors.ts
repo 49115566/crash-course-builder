@@ -3,6 +3,7 @@ import type { Logger } from 'pino';
 import { ZodError } from 'zod';
 import type { ApiError, ErrorCode } from '@ccb/contracts';
 
+import { LibraryError } from '../domain/library-errors.js';
 import { getRequestId } from './response.js';
 
 const STATUS_BY_CODE: Record<ErrorCode, number> = {
@@ -124,6 +125,15 @@ function validationEnvelope(error: ZodError): ErrorEnvelopeResult {
 }
 
 export function toErrorEnvelope(error: unknown): ErrorEnvelopeResult {
+  if (error instanceof LibraryError) {
+    return toErrorEnvelope(
+      new AppError(error.code, error.message, {
+        details: error.details,
+        cause: error,
+      }),
+    );
+  }
+
   if (error instanceof AppError) {
     return {
       status: error.status,

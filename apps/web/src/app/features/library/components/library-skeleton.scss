@@ -1,0 +1,38 @@
+:host {
+  display: block;
+}
+
+.skeleton-stack {
+  display: grid;
+  gap: var(--ccb-space-3);
+}
+
+.skeleton-subject {
+  display: grid;
+  gap: var(--ccb-space-3);
+  padding: var(--ccb-space-3);
+  border: 1px solid var(--ccb-line);
+  border-radius: var(--ccb-radius-lg);
+  background: color-mix(in srgb, var(--ccb-surface) 82%, white);
+}
+
+.skeleton-subject__heading {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ccb-space-2);
+}
+
+.skeleton-subject__cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
+  gap: var(--ccb-space-2);
+}
+
+.skeleton-card {
+  display: grid;
+  gap: 0.7rem;
+  padding: var(--ccb-space-3);
+  border: 1px solid var(--ccb-line);
+  border-radius: var(--ccb-radius-md);
+  background: var(--ccb-surface-raised);
+}

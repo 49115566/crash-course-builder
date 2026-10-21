@@ -6,18 +6,22 @@ computer.
 
 ## Current status
 
-Milestone 0 (Foundation) is implemented:
+Milestone 1 (Library) is implemented:
 
-- npm workspace with shared contracts, Angular web app, and Node/Express server.
-- Strict TypeScript, ESLint, Prettier, Vitest, and Playwright setup.
-- Local configuration loader, redacting structured logging, API error envelope, request IDs, and a
-  health endpoint.
-- Design tokens, self-hosted fonts, accessible app shell, and shared UI primitives.
-- Development proxy and production-style local static serving.
-- Unit, API integration, and browser smoke tests.
+- Shared Zod contracts for subjects, courses, metadata, library order, and API requests.
+- A filesystem-backed course library with sanitized folder names, stable UUIDs, atomic writes,
+  restrictive permissions, hidden metadata, and staging-based deletion.
+- Subject creation, renaming, reordering, and deletion; course moving and deletion.
+- Library scanning with automatic reconciliation of manual folder renames and moves, plus
+  non-destructive warnings for corrupt or unexpected content.
+- A responsive library screen with search, drag reordering, keyboard-friendly subject actions,
+  dialogs, toasts, skeletons, scan warnings, and accessible empty/error states.
+- Unit, API integration, filesystem integration, and Playwright workflow tests, including a
+  temporary-library no-AI workflow and axe accessibility checks.
 
-The course library, AI generation workflow, wizard, reader, and key-management CLI arrive in later
-milestones. No AI key is required yet.
+Course creation, AI generation, sessions, the reader, and the key-management CLI arrive in later
+milestones. **No AI key is required yet.** The library can be managed now; course cards appear for
+valid course folders already present on disk.
 
 ## Prerequisites
 
@@ -56,6 +60,44 @@ npm start
 
 Open <http://127.0.0.1:4310>. The Node process serves both the built Angular app and the API.
 
+## Library
+
+By default, the library lives at `~/CrashCourses`. The server creates it on first start, along with
+a private `.crash-course-builder/` metadata folder.
+
+```text
+<library root>/
+├── .crash-course-builder/
+│   ├── library.json          # subject order only
+│   └── staging/              # hidden delete staging area
+├── Computer Science/
+│   ├── .subject.json         # stable subject id and metadata
+│   └── Vector Databases/
+│       ├── course.md
+│       ├── outline.md
+│       └── meta.json
+└── Marketing/
+```
+
+- Folder names are readable and sanitized. Subject and course IDs are stable UUIDs, so renaming a
+  folder does not break links.
+- New directories use `0700` permissions and app-written files use `0600`.
+- JSON writes are atomic: temporary file, fsync, then rename.
+- Course deletion moves the folder into hidden staging before removal, so the library never shows a
+  half-deleted course.
+- Hidden folders are excluded from the library index.
+
+### Scan reconciliation
+
+Real folders are authoritative for existence and location:
+
+- Manually added subject folders are adopted with a new UUID.
+- Manual subject renames and course moves are repaired on the next scan. The folder name wins.
+- Corrupt metadata is reported as a warning and left untouched.
+- Missing course metadata is never silently adopted or deleted.
+- Duplicate IDs, nested folders, and symbolic links are reported or skipped safely.
+- Warnings appear in the library UI and do not block normal management.
+
 ## Scripts
 
 | Command                 | Purpose                                                                         |
@@ -66,7 +108,7 @@ Open <http://127.0.0.1:4310>. The Node process serves both the built Angular app
 | `npm run verify`        | Format check, lint, contract validation, typecheck, tests, and production build |
 | `npm test`              | Run contracts, server, and Angular unit tests                                   |
 | `npm run test:coverage` | Run tests with coverage reporting                                               |
-| `npm run e2e`           | Build and run the Playwright smoke suite                                        |
+| `npm run e2e`           | Build and run Playwright against an isolated temporary library                  |
 | `npm run e2e:install`   | Install the Chromium browser used by Playwright                                 |
 | `npm run format`        | Format the repository                                                           |
 | `npm run clean`         | Remove build and test output                                                    |
@@ -78,6 +120,8 @@ npm run e2e:install
 npm run e2e
 ```
 
+The e2e server uses `.tmp/e2e/`, never your real library.
+
 ## Configuration
 
 Configuration is read from environment variables. No `.env` file is loaded automatically.
@@ -86,22 +130,20 @@ Configuration is read from environment variables. No `.env` file is loaded autom
 | ----------------------- | ----------------------------- | --------------------------------------------------------------- |
 | `CCB_PORT`              | `4310`                        | Local server port                                               |
 | `CCB_LIBRARY_ROOT`      | `~/CrashCourses`              | Course library root                                             |
-| `CCB_DATA_DIR`          | OS application data directory | Session and application data                                    |
+| `CCB_DATA_DIR`          | OS application data directory | Session and application data (sessions arrive in Milestone 3)   |
 | `CCB_CONFIG_DIR`        | OS configuration directory    | Configuration fallback                                          |
 | `CCB_MODEL`             | `deepseek-chat`               | AI model name                                                   |
 | `CCB_DEEPSEEK_BASE_URL` | `https://api.deepseek.com`    | DeepSeek API base URL                                           |
 | `CCB_LOG_LEVEL`         | `info`                        | `fatal`, `error`, `warn`, `info`, `debug`, `trace`, or `silent` |
 | `CCB_WEB_DIST`          | `apps/web/dist/web/browser`   | Optional web build override                                     |
 
-The library and data directories are not created in Milestone 0.
-
 ## Project layout
 
 ```text
 apps/web/          Angular application
-apps/server/       Express API and static file server
+apps/server/       Express API, filesystem library, and static file server
 packages/contracts Shared Zod schemas, DTOs, error codes, and constants
-e2e/               Playwright specs
+e2e/               Playwright specs, helpers, and isolated server launcher
 ```
 
 The build order is contracts → web → server. Angular and Node consume the built contracts package.
@@ -109,12 +151,15 @@ The build order is contracts → web → server. Angular and Node consume the bu
 ## Privacy and security baseline
 
 - No analytics or telemetry.
-- Fonts are self-hosted through Fontsource; the app makes no external requests in Foundation.
+- Fonts are self-hosted through Fontsource; the app makes no external requests while managing the
+  library.
 - The server binds `127.0.0.1` only.
+- The library API requires local paths to stay inside the configured library root and rejects path
+  separators, traversal, reserved names, and symbolic links.
 - Structured logs redact authorization headers, cookies, API-key fields, and secret fields.
 - API responses use `Cache-Control: no-store`; hashed static assets are cached immutably.
-- Baseline security headers are enabled. CSP nonce injection, origin/CSRF enforcement, and the
-  full hardening pass are scheduled for Milestone 6.
+- Baseline security headers are enabled. CSP nonce injection, origin/CSRF enforcement, and the full
+  hardening pass are scheduled for Milestone 6.
 - Secrets are never returned by the health endpoint.
 
 ## Troubleshooting
@@ -123,5 +168,9 @@ The build order is contracts → web → server. Angular and Node consume the bu
 - **Port already in use:** stop the other process or set `CCB_PORT`.
 - **“Local service unavailable” in the footer:** the browser loaded but the Node service is not
   running. Start `npm run dev` or `npm start`.
+- **“Library unavailable”:** check that `CCB_LIBRARY_ROOT` exists or can be created, and that the
+  current user can read and write it.
+- **A repair warning appears:** the folder tree changed outside the app, or metadata was corrupt.
+  Review the warning details; course files are not deleted automatically.
 - **Playwright cannot find Chromium:** run `npm run e2e:install`.
 - **Angular dev server shows an API error:** confirm the server is listening on port 4310.

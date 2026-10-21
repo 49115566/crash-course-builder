@@ -1,0 +1,31 @@
+:host {
+  display: block;
+}
+
+.skeleton {
+  display: block;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--ccb-line) 72%, transparent),
+    color-mix(in srgb, var(--ccb-surface) 92%, transparent),
+    color-mix(in srgb, var(--ccb-line) 72%, transparent)
+  );
+  background-size: 220% 100%;
+  animation: skeleton-shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes skeleton-shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -120% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+  }
+}

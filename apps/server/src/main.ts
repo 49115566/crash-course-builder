@@ -2,6 +2,8 @@ import type { Server } from 'node:http';
 
 import type { Logger } from 'pino';
 
+import { FsLibraryRepository } from './adapters/fs/fs-library-repository.js';
+import { LibraryService } from './app/library-service.js';
 import { assertSupportedNode, loadConfig } from './config.js';
 import { createApp } from './http/app.js';
 import { createLogger } from './logger.js';
@@ -58,11 +60,23 @@ function registerShutdown(server: Server, logger: Logger): void {
   });
 }
 
-function start(): void {
+async function start(): Promise<void> {
   assertSupportedNode();
   const config = loadConfig();
   const logger = createLogger(config);
-  const app = createApp({ config, logger, version: APP_VERSION });
+  const repository = new FsLibraryRepository({ root: config.libraryRoot });
+  const libraryService = new LibraryService(repository);
+
+  try {
+    await libraryService.initialize();
+  } catch (error) {
+    logger.error(
+      { err: error, libraryRoot: config.libraryRoot },
+      'The course library could not be prepared. The API will start in a degraded state.',
+    );
+  }
+
+  const app = createApp({ config, logger, version: APP_VERSION, libraryService });
 
   const server = app.listen(config.port, '127.0.0.1', () => {
     logger.info(
@@ -73,6 +87,7 @@ function start(): void {
         dataDir: config.dataDir,
         model: config.model,
         deepseekBaseUrl: config.deepseekBaseUrl,
+        library: libraryService.getReadiness().status,
       },
       'Crash Course Builder is listening',
     );
@@ -99,10 +114,8 @@ function start(): void {
   registerShutdown(server, logger);
 }
 
-try {
-  start();
-} catch (error) {
+start().catch((error: unknown) => {
   const message = error instanceof Error ? error.message : 'Unknown startup error';
   process.stderr.write(`Crash Course Builder could not start: ${message}\n`);
   process.exitCode = 1;
-}
+});

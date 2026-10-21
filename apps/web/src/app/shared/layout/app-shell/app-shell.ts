@@ -4,12 +4,13 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { startWith } from 'rxjs';
 
 import { HealthService } from '../../../core/api/health.service';
+import { ToastOutlet } from '../../ui/toast/toast-outlet';
 
 const LOADING_HEALTH = { state: 'loading' } as const;
 
 @Component({
   selector: 'ccb-app-shell',
-  imports: [RouterLink, RouterLinkActive, RouterOutlet],
+  imports: [RouterLink, RouterLinkActive, RouterOutlet, ToastOutlet],
   templateUrl: './app-shell.html',
   styleUrl: './app-shell.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
