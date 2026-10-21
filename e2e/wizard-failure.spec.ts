@@ -1,8 +1,8 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, test } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 
+import { expect, test } from './support/app-fixtures';
 import { libraryRoot } from './support/library-paths';
 import {
   approveOutline,
@@ -11,7 +11,7 @@ import {
   waitForCourseReady,
 } from './support/wizard-fixtures';
 
-test.use({ baseURL: 'http://127.0.0.1:4312' });
+test.use({ appKey: 'wizard-failure', appMode: 'failure' });
 test.setTimeout(120_000);
 
 test('pauses with an error, preserves completed sections, and resumes manually', async ({
@@ -40,7 +40,7 @@ test('pauses with an error, preserves completed sections, and resumes manually',
   await page.getByRole('button', { name: 'Resume writing' }).click();
   await waitForCourseReady(page);
 
-  const coursePath = path.join(libraryRoot('failure'), 'Incident Response', 'Failure Recovery');
+  const coursePath = path.join(libraryRoot(), 'Incident Response', 'Failure Recovery');
   const meta = JSON.parse(await readFile(path.join(coursePath, 'meta.json'), 'utf8')) as {
     stats: { sections: number };
   };

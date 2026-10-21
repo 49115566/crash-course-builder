@@ -246,11 +246,17 @@ Real folders are authoritative for existence and location:
 | `npm run doctor`        | Check Node, directories, permissions, key, port, web build, and library readiness |
 | `npm run build`         | Build contracts, web, and server in order                                         |
 | `npm start`             | Verify and serve the production build; opens the browser unless `--no-open`       |
-| `npm run verify`        | Format check, lint, contract validation, typecheck, tests, and production build   |
-| `npm test`              | Run contracts, server, and Angular unit tests                                     |
-| `npm run test:coverage` | Run tests with coverage reporting                                                 |
-| `npm run e2e`           | Build and run Playwright in Chromium, Firefox, and WebKit                         |
-| `npm run e2e:chromium`  | Build and run the Playwright suite in Chromium only                               |
+| `npm run verify`        | Full gate: format, lint, coverage, typecheck, production build, and size check    |
+| `npm run verify:fast`   | Format, lint, typecheck, and unit tests without coverage or a production build    |
+| `npm test`              | Run contracts, server, and Angular unit tests in parallel                         |
+| `npm run test:coverage` | Run all workspace tests with coverage reporting                                   |
+| `npm run e2e`           | Run Playwright in Chromium, building only when artifacts are stale                |
+| `npm run e2e:all`       | Run the full Playwright matrix in Chromium, Firefox, and WebKit                   |
+| `npm run e2e:fast`      | Alias for the default Chromium E2E run                                            |
+| `npm run e2e:smoke`     | Run the tagged smoke subset in Chromium                                           |
+| `npm run e2e:chromium`  | Alias for the default Chromium E2E run                                            |
+| `npm run e2e:firefox`   | Run the Playwright suite in Firefox only                                          |
+| `npm run e2e:webkit`    | Run the Playwright suite in WebKit only                                           |
 | `npm run e2e:install`   | Install the Chromium, Firefox, and WebKit browsers                                |
 | `npm run smoke`         | Start the built server with a temporary library and run a fake-AI release smoke   |
 | `npm run check:size`    | Enforce the 350 KiB gzip initial-bundle budget                                    |
@@ -261,7 +267,7 @@ Release validation:
 
 ```bash
 npm run verify
-npm run e2e
+npm run e2e:all
 npm run smoke
 ```
 
@@ -275,9 +281,14 @@ npm run e2e:install
 npm run e2e
 ```
 
-The e2e command starts isolated library/data/config roots under `.tmp/e2e/` for the library, wizard,
-failure, keyless, and accessibility scenarios. It never touches your real library. The same suite is
-run in Chromium, Firefox, and WebKit.
+`npm run e2e` is the fast local path: it runs Chromium, skips the build when artifacts are current,
+and starts one isolated server per spec file. `npm run e2e:all` runs the same suite in Chromium,
+Firefox, and WebKit for release validation. Each server gets its own library/data/config root under
+`.tmp/e2e/`, so parallel workers never share state and never touch your real library.
+
+Wizard tests use a fast fake-AI mode unless they exercise pause, stop, resume, or the generation lock;
+those tests use a slower streaming mode at a fraction of the previous delay. Override local
+parallelism with `CCB_E2E_WORKERS=<n>`.
 
 ## Configuration
 

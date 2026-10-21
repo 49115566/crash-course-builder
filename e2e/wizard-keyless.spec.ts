@@ -1,7 +1,8 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, test } from '@playwright/test';
 
-test.use({ baseURL: 'http://127.0.0.1:4313' });
+import { expect, test } from './support/app-fixtures';
+
+test.use({ appKey: 'wizard-keyless', appMode: 'keyless' });
 test.setTimeout(60_000);
 
 test('shows persistent key guidance and disables generation', async ({ page }) => {

@@ -1,8 +1,13 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './support/app-fixtures';
 
-const appOrigin = 'http://127.0.0.1:4310';
+test.use({ appKey: 'smoke' });
 
-test('serves the accessible app shell and a healthy local API', async ({ page, request }) => {
+test('serves the accessible app shell and a healthy local API @smoke', async ({
+  app,
+  page,
+  request,
+}) => {
+  const appOrigin = new URL(app.baseURL).origin;
   const consoleErrors: string[] = [];
   const pageErrors: string[] = [];
   const externalRequests: string[] = [];

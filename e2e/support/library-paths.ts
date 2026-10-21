@@ -1,9 +1,13 @@
 import path from 'node:path';
 
-export function e2eRoot(name = 'main'): string {
-  return path.resolve(process.cwd(), '.tmp', 'e2e', name);
+const fallbackRoot = path.resolve(process.cwd(), '.tmp', 'e2e', 'main');
+
+export function e2eRoot(): string {
+  const active = process.env['CCB_E2E_ROOT'];
+
+  return active === undefined || active.length === 0 ? fallbackRoot : path.resolve(active);
 }
 
-export function libraryRoot(name = 'main'): string {
-  return path.join(e2eRoot(name), 'library');
+export function libraryRoot(): string {
+  return path.join(e2eRoot(), 'library');
 }

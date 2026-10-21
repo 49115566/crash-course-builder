@@ -1,11 +1,11 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, test } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
 
+import { expect, test } from './support/app-fixtures';
 import { seedCourse } from './support/library-fixtures';
 import { libraryRoot } from './support/library-paths';
 
-test.use({ baseURL: 'http://127.0.0.1:4314' });
+test.use({ appKey: 'accessibility' });
 
 test.describe.serial('keyboard and accessibility release checks', () => {
   test('moves focus through menus and restores it on Escape', async ({ page, request }) => {
@@ -48,7 +48,7 @@ test.describe.serial('keyboard and accessibility release checks', () => {
           '# Keyboard Reading: A Crash Course\n\nA short course.\n\n## 1. First Section\n\nSome text.\n\n## 2. Second Section\n\nMore text.\n',
         outlineMarkdown: '# Keyboard Reading\n\n1. First Section\n2. Second Section\n',
       },
-      libraryRoot('accessibility'),
+      libraryRoot(),
     );
 
     await page.goto(`/courses/${courseId}`);
