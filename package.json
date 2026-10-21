@@ -29,7 +29,7 @@
     "test": "npm run test -w @ccb/contracts && npm run test -w @ccb/server && npm run test -w @ccb/web",
     "test:coverage": "npm run build:contracts && npm run test:coverage -w @ccb/contracts && npm run test:coverage -w @ccb/server && npm run test:coverage -w @ccb/web",
     "validate:contracts": "npm run build:contracts && npm run test -w @ccb/contracts",
-    "verify": "npm run format:check && npm run lint && npm run validate:contracts && npm run typecheck && npm run test:coverage && npm run build && npm run check:size",
+    "verify": "npm run build:contracts && npm run format:check && npm run lint && npm run validate:contracts && npm run typecheck && npm run test:coverage && npm run build && npm run check:size",
     "e2e": "npm run build && playwright test --project=chromium && playwright test --project=firefox && playwright test --project=webkit",
     "e2e:install": "playwright install chromium firefox webkit",
     "clean": "rimraf apps/server/dist apps/web/dist apps/web/.angular packages/contracts/dist coverage playwright-report test-results .tmp",
