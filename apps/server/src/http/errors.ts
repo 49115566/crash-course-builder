@@ -11,6 +11,7 @@ import { getRequestId } from './response.js';
 
 const STATUS_BY_CODE: Record<ErrorCode, number> = {
   VALIDATION_FAILED: 400,
+  FORBIDDEN: 403,
   NOT_FOUND: 404,
   CONFLICT: 409,
   INVALID_STATE: 409,

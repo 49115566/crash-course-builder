@@ -1,7 +1,9 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
-import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
-import { startWith } from 'rxjs';
+import { DOCUMENT } from '@angular/common';
+import { LiveAnnouncer } from '@angular/cdk/a11y';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject } from '@angular/core';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
+import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { filter, startWith } from 'rxjs';
 
 import { HealthService } from '../../../core/api/health.service';
 import { BootstrapStore } from '../../../core/bootstrap/bootstrap.store';
@@ -20,9 +22,25 @@ const LOADING_HEALTH = { state: 'loading' } as const;
 export class AppShell {
   private readonly healthService = inject(HealthService);
   private readonly bootstrap = inject(BootstrapStore);
+  private readonly router = inject(Router);
+  private readonly document = inject(DOCUMENT);
+  private readonly announcer = inject(LiveAnnouncer);
+  private readonly destroyRef = inject(DestroyRef);
 
   constructor() {
     void this.bootstrap.load();
+
+    this.router.events
+      .pipe(
+        filter((event): event is NavigationEnd => event instanceof NavigationEnd),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe(() => {
+        const title = this.document.title;
+        if (title.length > 0) {
+          void this.announcer.announce(title, 'polite');
+        }
+      });
   }
 
   protected readonly health = toSignal(

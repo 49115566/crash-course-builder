@@ -29,6 +29,16 @@
               {
                 "glob": "**/*",
                 "input": "public"
+              },
+              {
+                "glob": "katex.min.css",
+                "input": "node_modules/katex/dist",
+                "output": "vendor/katex"
+              },
+              {
+                "glob": "fonts/**/*",
+                "input": "node_modules/katex/dist",
+                "output": "vendor/katex"
               }
             ],
             "styles": [
@@ -36,7 +46,6 @@
               "@fontsource-variable/inter/index.css",
               "@fontsource-variable/source-serif-4/wght.css",
               "@fontsource-variable/source-serif-4/wght-italic.css",
-              "katex/dist/katex.min.css",
               "src/styles.scss"
             ]
           },
@@ -45,8 +54,8 @@
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "500kB",
-                  "maximumError": "1MB"
+                  "maximumWarning": "400kB",
+                  "maximumError": "500kB"
                 },
                 {
                   "type": "anyComponentStyle",
@@ -54,6 +63,14 @@
                   "maximumError": "12kB"
                 }
               ],
+              "optimization": {
+                "scripts": true,
+                "styles": {
+                  "minify": true,
+                  "inlineCritical": false
+                },
+                "fonts": true
+              },
               "outputHashing": "all"
             },
             "development": {

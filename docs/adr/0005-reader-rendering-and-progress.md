@@ -23,7 +23,8 @@ progress tracking and must not be persisted.
 - Run KaTeX **after** sanitization on the sanitized DOM. KaTeX uses `trust: false`, bounded macro
   expansion, and skips code blocks. This avoids granting DOMPurify a broad MathML/style allowlist
   for model output.
-- Keep all Markdown and KaTeX JavaScript behind the lazy `/courses/:id` route.
+- Keep all Markdown and KaTeX JavaScript behind the lazy `/courses/:id` route. KaTeX CSS and fonts
+  are also loaded only when the reader mounts.
 - Derive the “In this course” card, sidebar, and heading anchors from the canonical H2 headings in
   `course.md`. `outline.md` remains a separate human-readable file and is not rendered as a second,
   competing outline.
@@ -37,8 +38,9 @@ progress tracking and must not be persisted.
 ## Consequences
 
 - Malicious or malformed Markdown cannot create script, image, iframe, or unsafe-link execution.
-- KaTeX output is trusted only to the extent of the KaTeX renderer with `trust: false`; its inline
-  style attributes are a documented residual risk for the CSP milestone.
+- KaTeX output is trusted only to the extent of the KaTeX renderer with `trust: false`. Its inline
+  style attributes are the documented residual exception covered by `style-src-attr 'unsafe-inline'`
+  in the Milestone 6 CSP.
 - The table of contents always matches the actual section headings, including hand-edited files.
 - Reading progress resets on reload by design and cannot be mistaken for completion tracking.
 - The reader route adds a sizeable lazy chunk, but the initial application bundle is unchanged.

@@ -92,6 +92,21 @@ svg {
   border: 0;
 }
 
+@media (forced-colors: active) {
+  :focus-visible {
+    outline: 3px solid Highlight;
+  }
+
+  .ccb-skip-link {
+    border: 2px solid ButtonText;
+  }
+
+  .ccb-skip-link:focus {
+    background: ButtonFace;
+    color: ButtonText;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

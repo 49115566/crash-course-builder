@@ -1,4 +1,5 @@
 import { defineConfig, devices } from '@playwright/test';
+import { MUTATION_HEADER_NAME, MUTATION_HEADER_VALUE } from '@ccb/contracts';
 
 const baseURL = 'http://127.0.0.1:4310';
 
@@ -32,6 +33,9 @@ export default defineConfig({
     baseURL,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
+    extraHTTPHeaders: {
+      [MUTATION_HEADER_NAME]: MUTATION_HEADER_VALUE,
+    },
   },
   webServer: [
     server('main', 4310),
@@ -58,11 +62,23 @@ export default defineConfig({
       key: false,
       env: { CCB_FAKE_AI_DELAY_MS: '0' },
     }),
+    server('accessibility', 4314, {
+      key: true,
+      env: { CCB_FAKE_AI_DELAY_MS: '0' },
+    }),
   ],
   projects: [
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'firefox',
+      use: { ...devices['Desktop Firefox'] },
+    },
+    {
+      name: 'webkit',
+      use: { ...devices['Desktop Safari'] },
     },
   ],
 });

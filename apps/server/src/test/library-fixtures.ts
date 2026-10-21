@@ -191,6 +191,7 @@ export interface TestAppOptions {
   secrets?: SecretStore;
   now?: () => Date;
   idFactory?: () => string;
+  cspNonce?: string;
 }
 
 export interface TestAppContext {
@@ -252,6 +253,7 @@ export async function makeTestApp(
     sessionService,
     events,
     secrets,
+    ...(options.cspNonce === undefined ? {} : { cspNonce: options.cspNonce }),
   });
 
   return {
