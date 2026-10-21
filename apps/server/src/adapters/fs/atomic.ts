@@ -5,7 +5,7 @@ import path from 'node:path';
 const TEMP_PREFIX = '.ccb-tmp-';
 const DIRECTORY_SYNC_ERRORS = new Set(['EINVAL', 'ENOTSUP', 'EPERM', 'EACCES', 'EISDIR']);
 
-async function syncDirectory(directory: string): Promise<void> {
+export async function syncDirectory(directory: string): Promise<void> {
   let handle: Awaited<ReturnType<typeof open>> | null = null;
 
   try {
@@ -21,7 +21,7 @@ async function syncDirectory(directory: string): Promise<void> {
   }
 }
 
-export async function writeJsonAtomic(filePath: string, value: unknown): Promise<void> {
+async function writeFileAtomic(filePath: string, contents: string): Promise<void> {
   const directory = path.dirname(filePath);
   const tempPath = path.join(directory, `${TEMP_PREFIX}${path.basename(filePath)}-${randomUUID()}`);
 
@@ -29,7 +29,7 @@ export async function writeJsonAtomic(filePath: string, value: unknown): Promise
 
   try {
     handle = await open(tempPath, 'wx', 0o600);
-    await handle.writeFile(`${JSON.stringify(value, null, 2)}\n`, 'utf8');
+    await handle.writeFile(contents, 'utf8');
     await handle.sync();
     await handle.close();
     handle = null;
@@ -40,6 +40,14 @@ export async function writeJsonAtomic(filePath: string, value: unknown): Promise
     await rm(tempPath, { force: true }).catch(() => undefined);
     throw error;
   }
+}
+
+export async function writeJsonAtomic(filePath: string, value: unknown): Promise<void> {
+  await writeFileAtomic(filePath, `${JSON.stringify(value, null, 2)}\n`);
+}
+
+export async function writeTextFileAtomic(filePath: string, contents: string): Promise<void> {
+  await writeFileAtomic(filePath, contents);
 }
 
 export async function removePath(targetPath: string): Promise<void> {

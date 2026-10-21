@@ -7,6 +7,7 @@ import { z } from 'zod';
 
 const LOG_LEVELS = ['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'] as const;
 const NODE_ENVS = ['development', 'test', 'production'] as const;
+const AI_PROVIDERS = ['deepseek', 'fake'] as const;
 
 const envSchema = z.object({
   NODE_ENV: z.enum(NODE_ENVS).default('development'),
@@ -15,6 +16,7 @@ const envSchema = z.object({
   CCB_DATA_DIR: z.string().trim().min(1).optional(),
   CCB_CONFIG_DIR: z.string().trim().min(1).optional(),
   CCB_MODEL: z.string().trim().min(1).default('deepseek-chat'),
+  CCB_AI_PROVIDER: z.enum(AI_PROVIDERS).default('deepseek'),
   CCB_DEEPSEEK_BASE_URL: z
     .url()
     .default('https://api.deepseek.com')
@@ -25,6 +27,7 @@ const envSchema = z.object({
 
 export type NodeEnvironment = (typeof NODE_ENVS)[number];
 export type LogLevel = (typeof LOG_LEVELS)[number];
+export type AiProviderKind = (typeof AI_PROVIDERS)[number];
 
 export interface AppConfig {
   nodeEnv: NodeEnvironment;
@@ -33,6 +36,7 @@ export interface AppConfig {
   dataDir: string;
   configDir: string;
   model: string;
+  aiProvider: AiProviderKind;
   deepseekBaseUrl: string;
   logLevel: LogLevel;
   webDistDir: string;
@@ -85,6 +89,7 @@ export function loadConfig(options: LoadConfigOptions = {}): AppConfig {
     dataDir: resolvePath(values.CCB_DATA_DIR ?? paths.data, homeDir, cwd),
     configDir: resolvePath(values.CCB_CONFIG_DIR ?? paths.config, homeDir, cwd),
     model: values.CCB_MODEL,
+    aiProvider: values.CCB_AI_PROVIDER,
     deepseekBaseUrl: values.CCB_DEEPSEEK_BASE_URL,
     logLevel: values.CCB_LOG_LEVEL,
     webDistDir: resolvePath(values.CCB_WEB_DIST ?? defaultWebDistDir, homeDir, cwd),

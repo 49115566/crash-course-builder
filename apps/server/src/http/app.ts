@@ -5,11 +5,16 @@ import { pinoHttp } from 'pino-http';
 import type { Logger } from 'pino';
 import { API_PREFIX, HEALTH_PATH, REQUEST_ID_HEADER } from '@ccb/contracts';
 
+import type { SessionEventBus } from '../app/event-bus.js';
 import type { LibraryService } from '../app/library-service.js';
+import type { SessionService } from '../app/session-service.js';
 import type { AppConfig } from '../config.js';
+import type { SecretStore } from '../ports/secret-store.js';
 import { NotFoundError, createErrorHandler } from './errors.js';
 import { getRequestId } from './response.js';
+import { createEventsRouter } from './routes/events.routes.js';
 import { createLibraryRouter } from './routes/library.routes.js';
+import { createSessionRouter } from './routes/session.routes.js';
 import { createSystemRouter } from './routes/system.routes.js';
 import { apiNoStore, securityHeaders } from './security.js';
 import { registerStaticRoutes } from './static.js';
@@ -19,9 +24,22 @@ export interface AppDependencies {
   logger: Logger;
   version: string;
   libraryService: LibraryService;
+  sessionService: SessionService;
+  events: SessionEventBus;
+  secrets: SecretStore;
+  sseHeartbeatMs?: number;
 }
 
-export function createApp({ config, logger, version, libraryService }: AppDependencies): Express {
+export function createApp({
+  config,
+  logger,
+  version,
+  libraryService,
+  sessionService,
+  events,
+  secrets,
+  sseHeartbeatMs,
+}: AppDependencies): Express {
   const app = express();
 
   app.disable('x-powered-by');
@@ -58,9 +76,18 @@ export function createApp({ config, logger, version, libraryService }: AppDepend
 
   app.use(
     API_PREFIX,
-    createSystemRouter(version, () => libraryService.getReadiness()),
+    createSystemRouter(version, config, () => libraryService.getReadiness(), secrets),
   );
   app.use(API_PREFIX, createLibraryRouter(libraryService));
+  app.use(API_PREFIX, createSessionRouter(sessionService));
+  app.use(
+    API_PREFIX,
+    createEventsRouter(
+      sessionService,
+      events,
+      sseHeartbeatMs === undefined ? {} : { heartbeatMs: sseHeartbeatMs },
+    ),
+  );
 
   app.use(API_PREFIX, (_req, _res, next) => {
     next(new NotFoundError('The API route could not be found.'));

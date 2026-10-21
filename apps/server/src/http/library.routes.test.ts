@@ -238,6 +238,7 @@ describe('library API', () => {
     const fileRoot = path.join(temp, 'library-file');
     await writeFile(fileRoot, 'not a directory', 'utf8');
     const service = new LibraryService(makeRepository(fileRoot));
+    const dependencies = await makeTestApp();
 
     try {
       await expect(service.initialize()).rejects.toBeTruthy();
@@ -247,6 +248,9 @@ describe('library API', () => {
         logger: makeSilentLogger(),
         version: '0.1.0-test',
         libraryService: service,
+        sessionService: dependencies.sessionService,
+        events: dependencies.events,
+        secrets: dependencies.secrets,
       });
 
       const health = await request(app).get('/api/health').expect(200);
@@ -258,6 +262,7 @@ describe('library API', () => {
       const library = await request(app).get('/api/library').expect(503);
       expect(errorOf(library.body).code).toBe('LIBRARY_UNAVAILABLE');
     } finally {
+      await dependencies.cleanup();
       await rm(temp, { recursive: true, force: true });
     }
   });

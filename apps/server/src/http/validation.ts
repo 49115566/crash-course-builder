@@ -14,3 +14,7 @@ export function parseSubjectId(request: Request): string {
 export function parseCourseId(request: Request): string {
   return subjectIdSchema.parse(request.params['id']);
 }
+
+export function parseSessionId(request: Request): string {
+  return subjectIdSchema.parse(request.params['id']);
+}

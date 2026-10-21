@@ -33,6 +33,9 @@ describe('static web serving', () => {
       logger: makeSilentLogger(),
       version: '0.1.0-test',
       libraryService: context.service,
+      sessionService: context.sessionService,
+      events: context.events,
+      secrets: context.secrets,
     });
   });
 

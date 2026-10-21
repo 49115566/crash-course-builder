@@ -11,6 +11,7 @@ export function makeConfig(overrides: Partial<AppConfig> = {}): AppConfig {
     dataDir: '/tmp/ccb-test-data',
     configDir: '/tmp/ccb-test-config',
     model: 'deepseek-chat',
+    aiProvider: 'fake',
     deepseekBaseUrl: 'https://api.deepseek.com',
     logLevel: 'silent',
     webDistDir: '/tmp/ccb-test-no-web-build',

@@ -12,6 +12,7 @@ describe('loadConfig', () => {
     expect(config.port).toBe(4310);
     expect(config.libraryRoot).toBe(path.resolve('/home/tester/CrashCourses'));
     expect(config.model).toBe('deepseek-chat');
+    expect(config.aiProvider).toBe('deepseek');
     expect(config.deepseekBaseUrl).toBe('https://api.deepseek.com');
     expect(config.logLevel).toBe('info');
     expect(config.dataDir).toContain('crash-course-builder');
@@ -27,6 +28,7 @@ describe('loadConfig', () => {
         CCB_DATA_DIR: '/var/lib/ccb',
         CCB_CONFIG_DIR: '/etc/ccb',
         CCB_MODEL: 'deepseek-reasoner',
+        CCB_AI_PROVIDER: 'fake',
         CCB_DEEPSEEK_BASE_URL: 'https://example.test/v1/',
         CCB_LOG_LEVEL: 'debug',
         CCB_WEB_DIST: '/srv/ccb/web',
@@ -41,6 +43,7 @@ describe('loadConfig', () => {
     expect(config.dataDir).toBe(path.resolve('/var/lib/ccb'));
     expect(config.configDir).toBe(path.resolve('/etc/ccb'));
     expect(config.model).toBe('deepseek-reasoner');
+    expect(config.aiProvider).toBe('fake');
     expect(config.deepseekBaseUrl).toBe('https://example.test/v1');
     expect(config.logLevel).toBe('debug');
     expect(config.webDistDir).toBe(path.resolve('/srv/ccb/web'));
@@ -69,6 +72,12 @@ describe('loadConfig', () => {
         homeDir: '/home/tester',
         cwd: '/work',
       }),
+    ).toThrow(ConfigError);
+  });
+
+  it('rejects invalid AI providers', () => {
+    expect(() =>
+      loadConfig({ env: { CCB_AI_PROVIDER: 'other' }, homeDir: '/home/tester', cwd: '/work' }),
     ).toThrow(ConfigError);
   });
 

@@ -45,7 +45,7 @@ export function assembleCourse(input: AssembleCourseInput): AssembledCourse {
       );
     }
 
-    return normalizeSection(section.number, section.title, draft.markdown);
+    return normalizeSectionContent(section.number, section.title, draft.markdown);
   });
 
   const courseMarkdown = `${collapseBlankLines(
@@ -133,7 +133,7 @@ function matchSections(
   return drafts;
 }
 
-function normalizeSection(number: number, title: string, markdown: string): string {
+export function normalizeSectionContent(number: number, title: string, markdown: string): string {
   let content = stripOuterFence(markdown);
   content = stripTableOfContentsBlocks(content);
   content = stripMermaidFences(content);

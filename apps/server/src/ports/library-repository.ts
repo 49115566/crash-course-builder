@@ -1,4 +1,10 @@
-import type { CourseSummary, LibraryData, ScanWarning, SubjectSummary } from '@ccb/contracts';
+import type {
+  CourseMetadata,
+  CourseSummary,
+  LibraryData,
+  ScanWarning,
+  SubjectSummary,
+} from '@ccb/contracts';
 
 export interface LibrarySnapshot extends LibraryData {
   warnings: ScanWarning[];
@@ -30,6 +36,21 @@ export interface DeleteSubjectOptions {
   confirmName?: string;
 }
 
+export interface FinalizeCourseInput {
+  courseId: string;
+  subjectId: string;
+  folderName: string;
+  metadata: CourseMetadata;
+  courseMarkdown: string;
+  outlineMarkdown: string;
+}
+
+export interface FinalizeCourseResult {
+  course: CourseSummary;
+  relativePath: string;
+  warnings: ScanWarning[];
+}
+
 export interface LibraryRepository {
   initialize(): Promise<void>;
   scan(): Promise<LibrarySnapshot>;
@@ -37,6 +58,7 @@ export interface LibraryRepository {
   renameSubject(id: string, name: string): Promise<SubjectMutationResult>;
   reorderSubjects(subjectIds: string[]): Promise<{ subjectIds: string[]; warnings: ScanWarning[] }>;
   moveCourse(courseId: string, subjectId: string): Promise<CourseMutationResult>;
+  finalizeCourse(input: FinalizeCourseInput): Promise<FinalizeCourseResult>;
   deleteCourse(courseId: string): Promise<DeleteCourseResult>;
   deleteSubject(id: string, options: DeleteSubjectOptions): Promise<DeleteSubjectResult>;
 }

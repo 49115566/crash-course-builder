@@ -13,9 +13,23 @@ import {
 } from '@ccb/contracts';
 
 import { FsLibraryRepository } from '../adapters/fs/fs-library-repository.js';
+import { FsSessionRepository } from '../adapters/fs/fs-session-repository.js';
+import { FakeAiProvider } from '../adapters/fake-ai/fake-ai-provider.js';
+import { SessionEventBus } from '../app/event-bus.js';
+import { GenerationCoordinator } from '../app/generation-coordinator.js';
+import { GenerationRunner } from '../app/generation-runner.js';
 import { LibraryService } from '../app/library-service.js';
+import { SessionService } from '../app/session-service.js';
+import { SessionStore } from '../app/session-store.js';
 import type { AppConfig } from '../config.js';
 import { createApp } from '../http/app.js';
+import type { AiProvider } from '../ports/ai-provider.js';
+import type {
+  ResolvedSecret,
+  SecretRemoveResult,
+  SecretStore,
+  SecretWriteResult,
+} from '../ports/secret-store.js';
 import { makeConfig, makeSilentLogger } from './test-config.js';
 
 export const IDS = {
@@ -147,33 +161,113 @@ export async function readCourseMetadata(folderPath: string): Promise<CourseMeta
   return courseMetadataSchema.parse(JSON.parse(contents));
 }
 
+export class MemorySecretStore implements SecretStore {
+  constructor(public key: string | null = 'test-key') {}
+
+  async resolve(): Promise<ResolvedSecret | null> {
+    return this.key === null ? null : { key: this.key, source: 'environment' };
+  }
+
+  async describe(): Promise<{ configured: boolean; source: 'environment' | 'none' }> {
+    return this.key === null
+      ? { configured: false, source: 'none' }
+      : { configured: true, source: 'environment' };
+  }
+
+  async setKey(key: string): Promise<SecretWriteResult> {
+    this.key = key;
+    return { source: 'environment' };
+  }
+
+  async removeKey(): Promise<SecretRemoveResult> {
+    const existed = this.key !== null;
+    this.key = null;
+    return { removed: existed, environmentStillSet: false };
+  }
+}
+
+export interface TestAppOptions {
+  provider?: AiProvider;
+  secrets?: SecretStore;
+  now?: () => Date;
+  idFactory?: () => string;
+}
+
 export interface TestAppContext {
   app: ReturnType<typeof createApp>;
   libraryRoot: string;
+  dataDir: string;
   service: LibraryService;
+  sessionService: SessionService;
+  events: SessionEventBus;
+  coordinator: GenerationCoordinator;
+  secrets: SecretStore;
   config: AppConfig;
   cleanup: () => Promise<void>;
 }
 
-export async function makeTestApp(overrides: Partial<AppConfig> = {}): Promise<TestAppContext> {
+export async function makeTestApp(
+  overrides: Partial<AppConfig> = {},
+  options: TestAppOptions = {},
+): Promise<TestAppContext> {
   const libraryRoot = await createTempDirectory();
+  const dataDir = await createTempDirectory('ccb-data-');
   const service = new LibraryService(makeRepository(libraryRoot));
   await service.initialize();
-  const config = makeConfig({ libraryRoot, ...overrides });
+  const config = makeConfig({ libraryRoot, dataDir, ...overrides });
+  const secrets = options.secrets ?? new MemorySecretStore();
+  const events = new SessionEventBus();
+  const coordinator = new GenerationCoordinator();
+  const sessions = new SessionStore(
+    new FsSessionRepository({ dataDir: config.dataDir, logger: makeSilentLogger() }),
+  );
+  const provider = options.provider ?? new FakeAiProvider();
+  const runner = new GenerationRunner({
+    sessions,
+    library: service,
+    provider,
+    coordinator,
+    events,
+    logger: makeSilentLogger(),
+    model: config.model,
+    ...(options.now === undefined ? {} : { now: options.now }),
+  });
+  const sessionService = new SessionService({
+    sessions,
+    library: service,
+    secrets,
+    events,
+    coordinator,
+    runner,
+    logger: makeSilentLogger(),
+    ...(options.now === undefined ? {} : { now: options.now }),
+    ...(options.idFactory === undefined ? {} : { idFactory: options.idFactory }),
+  });
+  await sessionService.initialize();
   const app = createApp({
     config,
     logger: makeSilentLogger(),
     version: '0.1.0-test',
     libraryService: service,
+    sessionService,
+    events,
+    secrets,
   });
 
   return {
     app,
     libraryRoot,
+    dataDir,
     service,
+    sessionService,
+    events,
+    coordinator,
+    secrets,
     config,
     cleanup: async () => {
+      events.shutdown();
       await rm(libraryRoot, { recursive: true, force: true });
+      await rm(dataDir, { recursive: true, force: true });
     },
   };
 }
