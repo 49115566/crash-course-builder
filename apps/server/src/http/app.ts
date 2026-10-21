@@ -16,7 +16,13 @@ import { createEventsRouter } from './routes/events.routes.js';
 import { createLibraryRouter } from './routes/library.routes.js';
 import { createSessionRouter } from './routes/session.routes.js';
 import { createSystemRouter } from './routes/system.routes.js';
-import { apiNoStore, securityHeaders } from './security.js';
+import {
+  apiNoStore,
+  createCspNonce,
+  createLocalRequestGuard,
+  createSecurityHeaders,
+  requireMutationHeader,
+} from './security.js';
 import { registerStaticRoutes } from './static.js';
 
 export interface AppDependencies {
@@ -28,6 +34,7 @@ export interface AppDependencies {
   events: SessionEventBus;
   secrets: SecretStore;
   sseHeartbeatMs?: number;
+  cspNonce?: string;
 }
 
 export function createApp({
@@ -39,8 +46,10 @@ export function createApp({
   events,
   secrets,
   sseHeartbeatMs,
+  cspNonce,
 }: AppDependencies): Express {
   const app = express();
+  const nonce = cspNonce ?? createCspNonce();
 
   app.disable('x-powered-by');
 
@@ -70,8 +79,10 @@ export function createApp({
     }),
   );
 
-  app.use(securityHeaders);
+  app.use(createSecurityHeaders(nonce));
   app.use(API_PREFIX, apiNoStore);
+  app.use(createLocalRequestGuard({ port: config.port, nodeEnv: config.nodeEnv }));
+  app.use(API_PREFIX, requireMutationHeader());
   app.use(express.json({ limit: '64kb', strict: true }));
 
   app.use(
@@ -93,7 +104,7 @@ export function createApp({
     next(new NotFoundError('The API route could not be found.'));
   });
 
-  registerStaticRoutes(app, config.webDistDir, logger);
+  registerStaticRoutes(app, config.webDistDir, logger, { nonce });
 
   app.use((_req, res) => {
     res.status(404).type('text/plain').send('Not found');

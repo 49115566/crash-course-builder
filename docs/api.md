@@ -24,7 +24,32 @@ only intended client. Successful JSON responses use the shared envelope:
 }
 ```
 
-Every response carries `x-request-id`. API responses are `no-store`.
+Every response carries `x-request-id`. Non-local hosts/origins and mutations without the required
+header use `403 FORBIDDEN`. API responses are `no-store`.
+
+## Local request requirements
+
+- The `Host` header must name `127.0.0.1` or `localhost` on the configured port. Non-local hosts are
+  rejected for API and static requests.
+- An `Origin` header, when present, must be a loopback origin. Development also accepts the Angular
+  dev-server origin on port 4200; production accepts only the configured server origin.
+- Every mutating API request (`POST`, `PUT`, `PATCH`, `DELETE`) must include
+  `x-ccb-request: 1`. This is the app's CSRF defence; there is no CORS middleware and no automatic
+  cross-origin preflight support.
+- A rejected request returns `403` with `code: "FORBIDDEN"`.
+- Responses carry a strict CSP with a per-process nonce. The same nonce is injected into the Angular
+  app root (`<ccb-root ngCspNonce="…">`) so Angular runtime style tags are allowed. `eval` and
+  inline scripts are blocked. KaTeX's generated style attributes are the documented
+  `style-src-attr 'unsafe-inline'` exception.
+
+Example mutation:
+
+```bash
+curl -X POST http://127.0.0.1:4310/api/subjects \
+  -H 'content-type: application/json' \
+  -H 'x-ccb-request: 1' \
+  --data '{"name":"Computer Science"}'
+```
 
 ## System
 

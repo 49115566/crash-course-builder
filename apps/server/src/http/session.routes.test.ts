@@ -10,7 +10,7 @@ import {
   type ApiError,
   type SessionData,
 } from '@ccb/contracts';
-import request from 'supertest';
+import { apiRequest } from '../test/api-request.js';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { FakeAiProvider } from '../adapters/fake-ai/fake-ai-provider.js';
@@ -41,7 +41,7 @@ function errorOf(body: unknown): ApiError['error'] {
 }
 
 async function createSubject(context: TestAppContext, name = 'Computer Science'): Promise<string> {
-  const response = await request(context.app).post('/api/subjects').send({ name }).expect(201);
+  const response = await apiRequest(context.app).post('/api/subjects').send({ name }).expect(201);
   return dataOf<{ subject: { id: string } }>(response.body).subject.id;
 }
 
@@ -50,7 +50,7 @@ async function createDraft(
   subjectId: string,
   overrides: Partial<{ topic: string; audience: string; instructions: string }> = {},
 ): Promise<SessionData> {
-  const response = await request(context.app)
+  const response = await apiRequest(context.app)
     .post('/api/sessions')
     .send({
       subjectId,
@@ -64,7 +64,7 @@ async function createDraft(
 }
 
 async function getSession(context: TestAppContext, id: string): Promise<SessionData> {
-  const response = await request(context.app).get(`/api/sessions/${id}`).expect(200);
+  const response = await apiRequest(context.app).get(`/api/sessions/${id}`).expect(200);
   return sessionDataResponseSchema.parse(dataOf(response.body)).session;
 }
 
@@ -80,9 +80,9 @@ async function waitForStatus(
 }
 
 async function outlineAndApprove(context: TestAppContext, id: string): Promise<void> {
-  await request(context.app).post(`/api/sessions/${id}/outline`).expect(202);
+  await apiRequest(context.app).post(`/api/sessions/${id}/outline`).expect(202);
   await waitForStatus(context, id, 'outline_review');
-  await request(context.app).post(`/api/sessions/${id}/approve`).expect(202);
+  await apiRequest(context.app).post(`/api/sessions/${id}/approve`).expect(202);
 }
 
 describe('session API', () => {
@@ -96,7 +96,7 @@ describe('session API', () => {
     expect(session.startingPrompt.user).toContain('Use practical examples.');
     expect(session.sections).toEqual([]);
 
-    const bootstrap = await request(context.app).get('/api/bootstrap').expect(200);
+    const bootstrap = await apiRequest(context.app).get('/api/bootstrap').expect(200);
     const bootstrapData = bootstrapDataSchema.parse(dataOf(bootstrap.body));
     expect(bootstrapData.key).toEqual({ configured: true, source: 'environment' });
     expect(JSON.stringify(bootstrap.body)).not.toContain('test-key');
@@ -149,7 +149,7 @@ describe('session API', () => {
     await new Promise((resolve) => setTimeout(resolve, 75));
     expect((await getSession(context, session.id)).status).toBe('failed');
 
-    await request(context.app).post(`/api/sessions/${session.id}/resume`).expect(202);
+    await apiRequest(context.app).post(`/api/sessions/${session.id}/resume`).expect(202);
     const completed = await waitForStatus(context, session.id, 'completed');
     expect(completed.sections.every((section) => section.status === 'completed')).toBe(true);
   });
@@ -171,7 +171,7 @@ describe('session API', () => {
     expect(sectionSpy).toHaveBeenCalledTimes(7);
     expect(finalizeSpy).toHaveBeenCalledTimes(1);
 
-    await request(context.app).post(`/api/sessions/${session.id}/resume`).expect(202);
+    await apiRequest(context.app).post(`/api/sessions/${session.id}/resume`).expect(202);
     await waitForStatus(context, session.id, 'completed');
     expect(sectionSpy).toHaveBeenCalledTimes(7);
     expect(finalizeSpy).toHaveBeenCalledTimes(2);
@@ -181,11 +181,11 @@ describe('session API', () => {
     const context = await appContext();
     const subjectId = await createSubject(context);
     const session = await createDraft(context, subjectId);
-    await request(context.app).post(`/api/sessions/${session.id}/outline`).expect(202);
+    await apiRequest(context.app).post(`/api/sessions/${session.id}/outline`).expect(202);
     const review = await waitForStatus(context, session.id, 'outline_review');
     expect(review.continuations).toHaveLength(7);
 
-    const resetResponse = await request(context.app)
+    const resetResponse = await apiRequest(context.app)
       .patch(`/api/sessions/${session.id}/inputs`)
       .send({ subjectId, topic: 'Graph Databases', audience: 'developers' })
       .expect(200);
@@ -199,12 +199,12 @@ describe('session API', () => {
     await outlineAndApprove(context, session.id);
     await waitForStatus(context, session.id, 'completed');
 
-    const regenerate = await request(context.app)
+    const regenerate = await apiRequest(context.app)
       .post(`/api/sessions/${session.id}/regenerate-outline`)
       .expect(409);
     expect(errorOf(regenerate.body)).toMatchObject({ code: 'EXPANSION_STARTED' });
 
-    const edit = await request(context.app)
+    const edit = await apiRequest(context.app)
       .patch(`/api/sessions/${session.id}/inputs`)
       .send({ subjectId, topic: 'Changed', audience: 'developers' })
       .expect(409);
@@ -217,19 +217,21 @@ describe('session API', () => {
     const subjectId = await createSubject(context);
     const first = await createDraft(context, subjectId);
     const second = await createDraft(context, subjectId, { topic: 'Graph Databases' });
-    await request(context.app).post(`/api/sessions/${first.id}/outline`).expect(202);
+    await apiRequest(context.app).post(`/api/sessions/${first.id}/outline`).expect(202);
     await waitForStatus(context, first.id, 'generating_outline');
 
-    const busy = await request(context.app).post(`/api/sessions/${second.id}/outline`).expect(409);
+    const busy = await apiRequest(context.app)
+      .post(`/api/sessions/${second.id}/outline`)
+      .expect(409);
     expect(errorOf(busy.body).code).toBe('GENERATION_BUSY');
     expect(errorOf(busy.body).details).toMatchObject({ activeSessionId: first.id });
 
-    await request(context.app).post(`/api/sessions/${first.id}/pause`).expect(202);
+    await apiRequest(context.app).post(`/api/sessions/${first.id}/pause`).expect(202);
     const paused = await waitForStatus(context, first.id, 'paused');
     expect(paused.pauseReason).toBe('user');
     expect(paused.stage).toBe('outline');
 
-    await request(context.app).post(`/api/sessions/${second.id}/outline`).expect(202);
+    await apiRequest(context.app).post(`/api/sessions/${second.id}/outline`).expect(202);
     await waitForStatus(context, second.id, 'outline_review');
   });
 
@@ -251,7 +253,7 @@ describe('session API', () => {
       (section) => section.status === 'completed',
     ).length;
 
-    await request(context.app).post(`/api/sessions/${session.id}/stop`).expect(202);
+    await apiRequest(context.app).post(`/api/sessions/${session.id}/stop`).expect(202);
     const paused = await waitForStatus(context, session.id, 'paused');
     expect(paused.pauseReason).toBe('stop');
     expect(paused.sections.filter((section) => section.status === 'completed').length).toBe(
@@ -259,7 +261,7 @@ describe('session API', () => {
     );
     expect(paused.sections.some((section) => section.status === 'running')).toBe(false);
 
-    await request(context.app).post(`/api/sessions/${session.id}/resume`).expect(202);
+    await apiRequest(context.app).post(`/api/sessions/${session.id}/resume`).expect(202);
     const completed = await waitForStatus(context, session.id, 'completed');
     expect(completed.sections.every((section) => section.status === 'completed')).toBe(true);
   }, 15_000);
@@ -270,13 +272,13 @@ describe('session API', () => {
     });
     const subjectId = await createSubject(context);
     const session = await createDraft(context, subjectId);
-    await request(context.app).post(`/api/sessions/${session.id}/outline`).expect(202);
+    await apiRequest(context.app).post(`/api/sessions/${session.id}/outline`).expect(202);
     await waitForStatus(context, session.id, 'generating_outline');
 
-    await request(context.app).delete(`/api/sessions/${session.id}`).expect(200);
+    await apiRequest(context.app).delete(`/api/sessions/${session.id}`).expect(200);
     await new Promise((resolve) => setTimeout(resolve, 100));
 
-    await request(context.app).get(`/api/sessions/${session.id}`).expect(404);
+    await apiRequest(context.app).get(`/api/sessions/${session.id}`).expect(404);
     expect(context.coordinator.getActiveSessionId()).not.toBe(session.id);
   });
 
@@ -286,7 +288,7 @@ describe('session API', () => {
     const subjectId = await createSubject(context);
     const session = await createDraft(context, subjectId);
 
-    await request(context.app).post(`/api/sessions/${session.id}/outline`).expect(202);
+    await apiRequest(context.app).post(`/api/sessions/${session.id}/outline`).expect(202);
     const failed = await waitForStatus(context, session.id, 'failed');
     expect(failed.stage).toBe('outline');
     expect(failed.lastError?.code).toBe('OUTLINE_INVALID');
@@ -308,13 +310,13 @@ describe('session API', () => {
         current.sections.some((section) => section.status === 'running'),
     );
 
-    await request(context.app).post(`/api/sessions/${session.id}/pause`).expect(202);
+    await apiRequest(context.app).post(`/api/sessions/${session.id}/pause`).expect(202);
     const paused = await waitForStatus(context, session.id, 'paused');
     expect(paused.pauseReason).toBe('user');
     expect(paused.sections.some((section) => section.status === 'completed')).toBe(true);
     expect(paused.sections.some((section) => section.status === 'running')).toBe(false);
 
-    await request(context.app).post(`/api/sessions/${session.id}/resume`).expect(202);
+    await apiRequest(context.app).post(`/api/sessions/${session.id}/resume`).expect(202);
     await waitForStatus(context, session.id, 'completed');
   }, 15_000);
 
@@ -323,13 +325,13 @@ describe('session API', () => {
     const subjectId = await createSubject(context);
     const session = await createDraft(context, subjectId);
 
-    const response = await request(context.app)
+    const response = await apiRequest(context.app)
       .post(`/api/sessions/${session.id}/outline`)
       .expect(409);
     expect(errorOf(response.body).code).toBe('KEY_MISSING');
     expect((await getSession(context, session.id)).status).toBe('draft');
 
-    const health = await request(context.app).get('/api/health').expect(200);
+    const health = await apiRequest(context.app).get('/api/health').expect(200);
     expect(dataOf(health.body)).toMatchObject({
       status: 'degraded',
       checks: { key: { status: 'degraded' } },
@@ -341,17 +343,19 @@ describe('session API', () => {
     const subjectId = await createSubject(context);
     const session = await createDraft(context, subjectId);
 
-    const list = await request(context.app).get('/api/sessions?active=true').expect(200);
+    const list = await apiRequest(context.app).get('/api/sessions?active=true').expect(200);
     expect(dataOf<{ sessions: Array<{ id: string }> }>(list.body).sessions).toHaveLength(1);
 
-    const invalidQuery = await request(context.app).get('/api/sessions?active=false').expect(400);
+    const invalidQuery = await apiRequest(context.app)
+      .get('/api/sessions?active=false')
+      .expect(400);
     expect(errorOf(invalidQuery.body).code).toBe('VALIDATION_FAILED');
 
-    const deleted = await request(context.app).delete(`/api/sessions/${session.id}`).expect(200);
+    const deleted = await apiRequest(context.app).delete(`/api/sessions/${session.id}`).expect(200);
     expect(deleteSessionResponseSchema.parse(dataOf(deleted.body))).toEqual({
       deletedId: session.id,
     });
-    await request(context.app).get(`/api/sessions/${session.id}`).expect(404);
+    await apiRequest(context.app).get(`/api/sessions/${session.id}`).expect(404);
   });
 
   it('recovers interrupted sessions as paused without losing completed sections', async () => {
@@ -416,7 +420,7 @@ describe('session API', () => {
     const context = await appContext();
     const subjectId = await createSubject(context);
     const session = await createDraft(context, subjectId);
-    const response = await request(context.app)
+    const response = await apiRequest(context.app)
       .post(`/api/sessions/${session.id}/outline`)
       .expect(202);
     const summary = sessionSummaryResponseSchema.parse(dataOf(response.body)).session;

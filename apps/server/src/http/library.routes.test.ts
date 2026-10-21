@@ -9,7 +9,7 @@ import {
   subjectMutationResponseSchema,
   type ApiError,
 } from '@ccb/contracts';
-import request from 'supertest';
+import { apiRequest } from '../test/api-request.js';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { LibraryService } from '../app/library-service.js';
@@ -53,7 +53,7 @@ afterEach(async () => {
 describe('library API', () => {
   it('returns an empty library with the success envelope', async () => {
     const { app } = await appContext();
-    const response = await request(app).get('/api/library').expect(200);
+    const response = await apiRequest(app).get('/api/library').expect(200);
     const parsed = apiSuccessSchema(libraryDataSchema).parse(response.body as unknown);
 
     expect(parsed.data).toEqual({ subjects: [], totalCourses: 0 });
@@ -62,7 +62,7 @@ describe('library API', () => {
 
   it('creates a subject and persists its folder and order', async () => {
     const { app, libraryRoot } = await appContext();
-    const response = await request(app)
+    const response = await apiRequest(app)
       .post('/api/subjects')
       .send({ name: 'Computer Science' })
       .expect(201);
@@ -79,7 +79,7 @@ describe('library API', () => {
     const { app } = await appContext();
 
     for (const name of ['', '   ', '../escape', 'a/b', 'CON']) {
-      const response = await request(app).post('/api/subjects').send({ name }).expect(400);
+      const response = await apiRequest(app).post('/api/subjects').send({ name }).expect(400);
       const error = errorOf(response.body);
       expect(error.code).toBe('VALIDATION_FAILED');
       expect(error.message).toBeTruthy();
@@ -88,7 +88,7 @@ describe('library API', () => {
 
   it('rejects unknown request fields', async () => {
     const { app } = await appContext();
-    const response = await request(app)
+    const response = await apiRequest(app)
       .post('/api/subjects')
       .send({ name: 'Math', extra: true })
       .expect(400);
@@ -98,10 +98,10 @@ describe('library API', () => {
 
   it('renames a subject', async () => {
     const { app, libraryRoot } = await appContext();
-    const created = await request(app).post('/api/subjects').send({ name: 'Old' }).expect(201);
+    const created = await apiRequest(app).post('/api/subjects').send({ name: 'Old' }).expect(201);
     const id = subjectMutationResponseSchema.parse(dataOf(created.body)).subject.id;
 
-    const response = await request(app)
+    const response = await apiRequest(app)
       .patch(`/api/subjects/${id}`)
       .send({ name: 'New' })
       .expect(200);
@@ -114,20 +114,24 @@ describe('library API', () => {
   it('returns 404 for an unknown subject and 400 for a malformed id', async () => {
     const { app } = await appContext();
 
-    await request(app).patch(`/api/subjects/${IDS.subjectA}`).send({ name: 'New' }).expect(404);
-    await request(app).patch('/api/subjects/not-a-uuid').send({ name: 'New' }).expect(400);
+    await apiRequest(app).patch(`/api/subjects/${IDS.subjectA}`).send({ name: 'New' }).expect(404);
+    await apiRequest(app).patch('/api/subjects/not-a-uuid').send({ name: 'New' }).expect(400);
   });
 
   it('persists subject order and rejects stale orders', async () => {
     const { app } = await appContext();
     const first = subjectMutationResponseSchema.parse(
-      dataOf((await request(app).post('/api/subjects').send({ name: 'First' }).expect(201)).body),
+      dataOf(
+        (await apiRequest(app).post('/api/subjects').send({ name: 'First' }).expect(201)).body,
+      ),
     ).subject;
     const second = subjectMutationResponseSchema.parse(
-      dataOf((await request(app).post('/api/subjects').send({ name: 'Second' }).expect(201)).body),
+      dataOf(
+        (await apiRequest(app).post('/api/subjects').send({ name: 'Second' }).expect(201)).body,
+      ),
     ).subject;
 
-    const response = await request(app)
+    const response = await apiRequest(app)
       .put('/api/subjects/order')
       .send({ subjectIds: [second.id, first.id] })
       .expect(200);
@@ -137,7 +141,7 @@ describe('library API', () => {
       first.id,
     ]);
 
-    const stale = await request(app)
+    const stale = await apiRequest(app)
       .put('/api/subjects/order')
       .send({ subjectIds: [first.id] })
       .expect(409);
@@ -151,7 +155,7 @@ describe('library API', () => {
     const { app, libraryRoot } = await appContext();
     const subject = subjectMutationResponseSchema.parse(
       dataOf(
-        (await request(app).post('/api/subjects').send({ name: 'Computer Science' }).expect(201))
+        (await apiRequest(app).post('/api/subjects').send({ name: 'Computer Science' }).expect(201))
           .body,
       ),
     ).subject;
@@ -163,7 +167,7 @@ describe('library API', () => {
       { courseMarkdown, outlineMarkdown },
     );
 
-    const response = await request(app).get(`/api/courses/${IDS.courseA}`).expect(200);
+    const response = await apiRequest(app).get(`/api/courses/${IDS.courseA}`).expect(200);
     const parsed = apiSuccessSchema(courseDetailSchema).parse(response.body as unknown);
 
     expect(parsed.data.courseMarkdown).toBe(courseMarkdown);
@@ -176,7 +180,7 @@ describe('library API', () => {
     const { app, libraryRoot } = await appContext();
     const subject = subjectMutationResponseSchema.parse(
       dataOf(
-        (await request(app).post('/api/subjects').send({ name: 'Incomplete' }).expect(201)).body,
+        (await apiRequest(app).post('/api/subjects').send({ name: 'Incomplete' }).expect(201)).body,
       ),
     ).subject;
     await seedCourse(
@@ -185,10 +189,10 @@ describe('library API', () => {
       { courseMarkdown: null },
     );
 
-    const unknown = await request(app).get(`/api/courses/${IDS.courseB}`).expect(404);
+    const unknown = await apiRequest(app).get(`/api/courses/${IDS.courseB}`).expect(404);
     expect(errorOf(unknown.body).code).toBe('NOT_FOUND');
 
-    const missing = await request(app).get(`/api/courses/${IDS.courseA}`).expect(404);
+    const missing = await apiRequest(app).get(`/api/courses/${IDS.courseA}`).expect(404);
     expect(errorOf(missing.body)).toMatchObject({
       code: 'NOT_FOUND',
       details: { files: ['course.md'] },
@@ -199,24 +203,28 @@ describe('library API', () => {
   it('rejects malformed course ids', async () => {
     const { app } = await appContext();
 
-    const response = await request(app).get('/api/courses/not-a-uuid').expect(400);
+    const response = await apiRequest(app).get('/api/courses/not-a-uuid').expect(400);
     expect(errorOf(response.body).code).toBe('VALIDATION_FAILED');
   });
 
   it('moves and deletes courses', async () => {
     const { app, libraryRoot } = await appContext();
     const first = subjectMutationResponseSchema.parse(
-      dataOf((await request(app).post('/api/subjects').send({ name: 'First' }).expect(201)).body),
+      dataOf(
+        (await apiRequest(app).post('/api/subjects').send({ name: 'First' }).expect(201)).body,
+      ),
     ).subject;
     const second = subjectMutationResponseSchema.parse(
-      dataOf((await request(app).post('/api/subjects').send({ name: 'Second' }).expect(201)).body),
+      dataOf(
+        (await apiRequest(app).post('/api/subjects').send({ name: 'Second' }).expect(201)).body,
+      ),
     ).subject;
     await seedCourse(
       path.join(libraryRoot, 'First'),
       makeCourseMetadata(IDS.courseA, { id: first.id, name: 'First' }),
     );
 
-    const moved = await request(app)
+    const moved = await apiRequest(app)
       .post(`/api/courses/${IDS.courseA}/move`)
       .send({ subjectId: second.id })
       .expect(200);
@@ -226,8 +234,11 @@ describe('library API', () => {
     );
     await expect(stat(path.join(libraryRoot, 'Second', 'Vector Databases'))).resolves.toBeTruthy();
 
-    await request(app).delete(`/api/courses/${IDS.courseA}`).send({}).expect(400);
-    await request(app).delete(`/api/courses/${IDS.courseA}`).send({ confirmed: true }).expect(200);
+    await apiRequest(app).delete(`/api/courses/${IDS.courseA}`).send({}).expect(400);
+    await apiRequest(app)
+      .delete(`/api/courses/${IDS.courseA}`)
+      .send({ confirmed: true })
+      .expect(200);
     await expect(stat(path.join(libraryRoot, 'Second', 'Vector Databases'))).rejects.toMatchObject({
       code: 'ENOENT',
     });
@@ -237,7 +248,7 @@ describe('library API', () => {
     const { app, libraryRoot } = await appContext();
     const subject = subjectMutationResponseSchema.parse(
       dataOf(
-        (await request(app).post('/api/subjects').send({ name: 'Populated' }).expect(201)).body,
+        (await apiRequest(app).post('/api/subjects').send({ name: 'Populated' }).expect(201)).body,
       ),
     ).subject;
     await seedCourse(
@@ -245,7 +256,7 @@ describe('library API', () => {
       makeCourseMetadata(IDS.courseA, { id: subject.id, name: 'Populated' }),
     );
 
-    const conflict = await request(app)
+    const conflict = await apiRequest(app)
       .delete(`/api/subjects/${subject.id}`)
       .send({ confirmed: true })
       .expect(409);
@@ -254,12 +265,12 @@ describe('library API', () => {
       subjectName: 'Populated',
     });
 
-    await request(app)
+    await apiRequest(app)
       .delete(`/api/subjects/${subject.id}`)
       .send({ confirmed: true, cascade: true, confirmName: 'wrong' })
       .expect(400);
 
-    const response = await request(app)
+    const response = await apiRequest(app)
       .delete(`/api/subjects/${subject.id}`)
       .send({ confirmed: true, cascade: true, confirmName: 'Populated' })
       .expect(200);
@@ -275,7 +286,7 @@ describe('library API', () => {
     const { app, libraryRoot } = await appContext();
     await mkdir(path.join(libraryRoot, 'Manual'));
 
-    const response = await request(app).get('/api/library').expect(200);
+    const response = await apiRequest(app).get('/api/library').expect(200);
 
     expect(warningsOf(response.body)).toContainEqual(
       expect.objectContaining({ code: 'SUBJECT_ADOPTED' }),
@@ -285,7 +296,7 @@ describe('library API', () => {
   it('keeps absolute paths out of scan warnings', async () => {
     const { app, libraryRoot } = await appContext();
     await mkdir(path.join(libraryRoot, 'Manual'));
-    const response = await request(app).get('/api/library').expect(200);
+    const response = await apiRequest(app).get('/api/library').expect(200);
 
     expect(JSON.stringify(response.body)).not.toContain(libraryRoot);
   });
@@ -310,13 +321,13 @@ describe('library API', () => {
         secrets: dependencies.secrets,
       });
 
-      const health = await request(app).get('/api/health').expect(200);
+      const health = await apiRequest(app).get('/api/health').expect(200);
       expect(dataOf(health.body)).toMatchObject({
         status: 'degraded',
         checks: { library: { status: 'degraded' } },
       });
 
-      const library = await request(app).get('/api/library').expect(503);
+      const library = await apiRequest(app).get('/api/library').expect(503);
       expect(errorOf(library.body).code).toBe('LIBRARY_UNAVAILABLE');
     } finally {
       await dependencies.cleanup();
@@ -326,7 +337,7 @@ describe('library API', () => {
 
   it('adds a request id to every response', async () => {
     const { app } = await appContext();
-    const response = await request(app).get('/api/library').expect(200);
+    const response = await apiRequest(app).get('/api/library').expect(200);
 
     expect(response.headers['x-request-id']).toBeTruthy();
     expect((response.body as { requestId: unknown }).requestId).toBe(

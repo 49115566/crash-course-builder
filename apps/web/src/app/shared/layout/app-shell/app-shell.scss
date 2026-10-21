@@ -1,6 +1,6 @@
 :host {
   display: grid;
-  grid-template-rows: auto auto 1fr auto;
+  grid-template-rows: auto 1fr auto;
   min-height: 100dvh;
 }
 
@@ -161,5 +161,26 @@
 
   .site-main {
     padding: var(--ccb-space-4) var(--ccb-space-2) var(--ccb-space-6);
+  }
+}
+
+@media (forced-colors: active) {
+  .brand__mark {
+    border: 2px solid ButtonText;
+    background: ButtonFace;
+  }
+
+  .brand__mark::before,
+  .brand__mark::after {
+    border-color: ButtonText;
+  }
+
+  .site-nav a.is-active {
+    outline: 2px solid Highlight;
+  }
+
+  .service-status__dot {
+    border: 1px solid ButtonText;
+    background: ButtonText;
   }
 }

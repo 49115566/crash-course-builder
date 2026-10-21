@@ -12,12 +12,7 @@ function assertNoPathSeparators(value: string): void {
 }
 
 function stripControlCharacters(value: string): string {
-  return Array.from(value)
-    .filter((character) => {
-      const code = character.codePointAt(0) ?? 0;
-      return code >= 32 && code !== 127;
-    })
-    .join('');
+  return value.replace(/[\p{Cc}\p{Cf}]/gu, '');
 }
 
 function truncate(value: string, maxLength: number): string {

@@ -1,5 +1,8 @@
 # Prompt contract v1
 
+Milestone 6 does not change prompt wording, delimiters, or version. The existing snapshot tests remain
+the source of truth and continue to pin the exact starting and continuation prompts.
+
 The source of truth for prompt text is
 `apps/server/src/domain/prompt-builder.ts`. Snapshot tests pin its exact output. This document
 describes the rules the builder implements and the policy for changing them.

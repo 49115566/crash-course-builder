@@ -443,6 +443,76 @@ describe('FsLibraryRepository', () => {
       );
     });
 
+    it('repairs an interrupted subject rename idempotently', async () => {
+      const subject = await repository.createSubject('Old Name');
+      const metadataPath = path.join(root, 'Old Name', '.subject.json');
+      const interrupted = {
+        ...(await readSubjectMetadata(path.join(root, 'Old Name'))),
+        name: 'New Name',
+      };
+      await writeFile(metadataPath, `${JSON.stringify(interrupted, null, 2)}\n`, 'utf8');
+      await seedCourse(
+        path.join(root, 'Old Name'),
+        makeCourseMetadata(IDS.courseA, {
+          id: subject.subject.id,
+          name: 'New Name',
+        }),
+      );
+
+      const first = await repository.scan();
+      const subjectMetadata = await readSubjectMetadata(path.join(root, 'Old Name'));
+      const courseMetadata = await readCourseMetadata(
+        path.join(root, 'Old Name', 'Vector Databases'),
+      );
+
+      expect(first.subjects[0]?.name).toBe('Old Name');
+      expect(subjectMetadata.name).toBe('Old Name');
+      expect(courseMetadata.subject.name).toBe('Old Name');
+      expect(first.warnings).toContainEqual(
+        expect.objectContaining({ code: 'SUBJECT_NAME_REPAIRED' }),
+      );
+      expect(first.warnings).toContainEqual(
+        expect.objectContaining({ code: 'COURSE_SUBJECT_REPAIRED' }),
+      );
+
+      const second = await repository.scan();
+
+      expect(second.warnings.some((warning) => warning.code === 'SUBJECT_NAME_REPAIRED')).toBe(
+        false,
+      );
+      expect(second.warnings.some((warning) => warning.code === 'COURSE_SUBJECT_REPAIRED')).toBe(
+        false,
+      );
+    });
+
+    it('repairs an interrupted course move without touching its files', async () => {
+      const source = await repository.createSubject('Source');
+      const target = await repository.createSubject('Target');
+      await seedCourse(
+        path.join(root, 'Target'),
+        makeCourseMetadata(IDS.courseA, {
+          id: source.subject.id,
+          name: 'Source',
+        }),
+      );
+      const coursePath = path.join(root, 'Target', 'Vector Databases');
+      const courseBefore = await readFile(path.join(coursePath, 'course.md'), 'utf8');
+
+      const first = await repository.scan();
+      const repaired = await readCourseMetadata(coursePath);
+
+      expect(first.subjects.find((entry) => entry.id === target.subject.id)?.courses).toHaveLength(
+        1,
+      );
+      expect(repaired.subject).toEqual({ id: target.subject.id, name: 'Target' });
+      expect(await readFile(path.join(coursePath, 'course.md'), 'utf8')).toBe(courseBefore);
+
+      const second = await repository.scan();
+      expect(second.warnings.some((warning) => warning.code === 'COURSE_SUBJECT_REPAIRED')).toBe(
+        false,
+      );
+    });
+
     it('uses the new folder location after a manual course move', async () => {
       const first = await repository.createSubject('First');
       const second = await repository.createSubject('Second');

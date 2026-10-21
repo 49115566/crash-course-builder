@@ -17,6 +17,38 @@ Angular app
 Domain code has no Express, filesystem, or network imports. Filesystem, provider, keychain, and
 clock/ID dependencies are injected from `main.ts` or test fixtures.
 
+## Request security
+
+Every request passes through the same pipeline:
+
+1. Request ID and structured logging.
+2. Strict security headers, including a CSP built around a per-process nonce.
+3. API no-store caching.
+4. Loopback-only Host validation and, when present, loopback-only Origin validation.
+5. The `x-ccb-request: 1` requirement for mutating API requests.
+6. Body parsing and route handlers.
+
+The production index is rendered by the server so the same nonce appears in the CSP header and in
+`<ccb-root ngCspNonce="…">`. Angular reads that attribute and applies the nonce to its runtime
+style tags. Production builds disable critical-CSS inlining, so the index contains no inline scripts
+or style blocks. KaTeX's generated style attributes are the only `style-src-attr 'unsafe-inline'`
+exception; untrusted Markdown style attributes are stripped before rendering.
+
+The server binds only `127.0.0.1`. Cross-origin requests are rejected, there is no CORS middleware,
+and the custom mutation header blocks cross-site form/fetch attacks. Static assets and the SPA
+fallback are subject to the same Host/Origin guard.
+
+## Static serving and performance
+
+`express.static` serves hashed assets with immutable caching and non-hashed public files with a short
+cache lifetime. `index.html` is always `no-store` and always receives the current CSP nonce, whether
+requested directly or through the SPA fallback.
+
+The initial route contains only the application shell, shared styles, and the library route. Reader
+Markdown/KaTeX JavaScript is lazy-loaded with `/courses/:id`; KaTeX CSS and fonts are copied to
+`vendor/katex/` and linked only when the reader mounts. `npm run check:size` parses the built index,
+gzips every initial asset, and fails the release if the initial graph exceeds 350 KiB gzip.
+
 ## Library and finalization
 
 Courses are assembled in a hidden staging directory:
@@ -123,6 +155,19 @@ The event bus fans out per session, coalesces token deltas, and flushes pending 
 non-delta event. The SSE route subscribes before reading the snapshot so events cannot race the
 initial state: events are buffered, the authoritative snapshot is sent, then buffered events are
 flushed. Heartbeats keep proxies and browsers from treating the stream as stalled.
+
+## Production startup and release
+
+`npm start` runs `scripts/start.mjs`. The wrapper sets `NODE_ENV=production`, verifies the server
+build, and starts the compiled server with `--require-web-build`. The server refuses to start if the
+Angular `index.html` is missing. After listening, it opens the local URL with the platform opener
+unless `--no-open`, `CCB_NO_OPEN=1`, or `CI` is set. Browser-open failures are warnings; they never
+stop the server.
+
+`npm run smoke` spawns the same production start path against an isolated temporary library, checks
+health, index HTML, CSP nonce injection, a complete fake-AI course write, graceful shutdown, and
+interrupted-session recovery. `npm run doctor` validates Node, writable directories, permissions,
+port availability, the library scan, the web build, and key source/validity.
 
 ## Shutdown
 

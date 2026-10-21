@@ -1,8 +1,8 @@
 import { once } from 'node:events';
 import type { Server } from 'node:http';
 
-import type { SessionEvent } from '@ccb/contracts';
-import request from 'supertest';
+import { MUTATION_HEADER_NAME, MUTATION_HEADER_VALUE, type SessionEvent } from '@ccb/contracts';
+import { apiRequest } from '../test/api-request.js';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { FakeAiProvider } from '../adapters/fake-ai/fake-ai-provider.js';
@@ -77,12 +77,12 @@ async function waitForEvent(
 async function createSetup(
   context: TestAppContext,
 ): Promise<{ subjectId: string; sessionId: string }> {
-  const subject = await request(context.app)
+  const subject = await apiRequest(context.app)
     .post('/api/subjects')
     .send({ name: 'Computer Science' })
     .expect(201);
   const subjectId = (subject.body as { data: { subject: { id: string } } }).data.subject.id;
-  const session = await request(context.app)
+  const session = await apiRequest(context.app)
     .post('/api/sessions')
     .send({ subjectId, topic: 'Vector Databases', audience: 'software engineers' })
     .expect(201);
@@ -124,7 +124,10 @@ describe('session event stream', () => {
       const snapshot = await waitForEvent(events, (event) => event.type === 'snapshot');
       expect(snapshot.type === 'snapshot' && snapshot.session.status).toBe('draft');
 
-      const start = await fetch(`${baseUrl}/api/sessions/${sessionId}/outline`, { method: 'POST' });
+      const start = await fetch(`${baseUrl}/api/sessions/${sessionId}/outline`, {
+        method: 'POST',
+        headers: { [MUTATION_HEADER_NAME]: MUTATION_HEADER_VALUE },
+      });
       expect(start.status).toBe(202);
       await waitForEvent(events, (event) => event.type === 'outline_ready');
       if (readError !== undefined) {

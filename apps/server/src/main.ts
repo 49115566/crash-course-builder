@@ -12,6 +12,12 @@ import { GenerationRunner } from './app/generation-runner.js';
 import { LibraryService } from './app/library-service.js';
 import { SessionService } from './app/session-service.js';
 import { SessionStore } from './app/session-store.js';
+import {
+  launchBrowser,
+  parseStartOptions,
+  shouldOpenBrowser,
+  verifyWebBuild,
+} from './cli/startup.js';
 import { assertSupportedNode, loadConfig } from './config.js';
 import { createApp } from './http/app.js';
 import { createLogger } from './logger.js';
@@ -102,6 +108,16 @@ async function start(): Promise<void> {
   assertSupportedNode();
   const config = loadConfig();
   const logger = createLogger(config);
+  const startOptions = parseStartOptions(process.argv.slice(2));
+
+  if (startOptions.requireWebBuild) {
+    const build = verifyWebBuild(config.webDistDir);
+    if (!build.ok) {
+      logger.fatal(build.message);
+      process.exitCode = 1;
+      return;
+    }
+  }
   const repository = new FsLibraryRepository({ root: config.libraryRoot });
   const libraryService = new LibraryService(repository);
   const secrets = createSecretStore(config, logger);
@@ -158,10 +174,11 @@ async function start(): Promise<void> {
   });
 
   const server = app.listen(config.port, '127.0.0.1', () => {
+    const url = `http://127.0.0.1:${String(config.port)}`;
     logger.info(
       {
         version: APP_VERSION,
-        url: `http://127.0.0.1:${config.port}`,
+        url,
         libraryRoot: config.libraryRoot,
         dataDir: config.dataDir,
         model: config.model,
@@ -170,6 +187,10 @@ async function start(): Promise<void> {
       },
       'Crash Course Builder is listening',
     );
+
+    if (shouldOpenBrowser(startOptions.openBrowser, process.env)) {
+      launchBrowser(url, logger);
+    }
   });
 
   server.on('error', (error: NodeJS.ErrnoException) => {

@@ -45,3 +45,16 @@
   --ccb-shell-width: 72rem;
   --ccb-reading-width: 68ch;
 }
+
+@media (prefers-contrast: more) {
+  :root {
+    --ccb-ink-muted: #3f4a44;
+    --ccb-line: #c9bda9;
+    --ccb-line-strong: #8f826d;
+    --ccb-accent: #0a4a45;
+    --ccb-accent-strong: #06332f;
+    --ccb-warning: #6f4200;
+    --ccb-danger: #7f2222;
+    --ccb-success: #20563d;
+  }
+}

@@ -1,6 +1,6 @@
 import { CdkMenuModule } from '@angular/cdk/menu';
 import { Dialog } from '@angular/cdk/dialog';
-import { DatePipe } from '@angular/common';
+import { DOCUMENT, DatePipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -25,6 +25,7 @@ import {
 } from './components/reader-contents.dialog';
 import { ReaderSidebar } from './components/reader-sidebar';
 import { ReaderSkeleton } from './components/reader-skeleton';
+import { ensureKatexStylesheet } from './markdown/katex-stylesheet';
 import { MarkdownView } from './markdown/markdown-view';
 import { parseCourseDocument } from './markdown/course-document';
 import { ReaderStore } from './reader.store';
@@ -50,6 +51,7 @@ export class ReaderPage {
   private readonly dialog = inject(Dialog);
   private readonly toast = inject(ToastService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly document = inject(DOCUMENT);
   private readonly article = viewChild<ElementRef<HTMLElement>>('article');
   private frame: number | null = null;
   private bodyRoot: HTMLElement | null = null;
@@ -101,6 +103,8 @@ export class ReaderPage {
   protected readonly sectionCount = computed(() => this.sectionHeadings().length);
 
   constructor() {
+    ensureKatexStylesheet(this.document);
+
     effect(() => {
       const courseId = this.id();
       if (courseId.length > 0) {

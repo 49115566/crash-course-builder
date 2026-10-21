@@ -7,7 +7,7 @@ computer.
 ## Current status
 
 Milestones 1 (Library), 2 (Prompt and outline domain), 3 (DeepSeek, sessions, streaming), 4
-(Wizard UX), and 5 (Reader) are implemented.
+(Wizard UX), 5 (Reader), and 6 (Hardening and release) are implemented.
 
 Milestone 1:
 
@@ -79,6 +79,21 @@ Milestone 5:
 The library, wizard, and reader remain fully usable without an AI key, although generation is
 disabled until a key is configured.
 
+Milestone 6:
+
+- A strict Content-Security-Policy with a per-process nonce injected into the app root and Angular's
+  `ngCspNonce`, plus loopback-only Host/Origin validation and a required `x-ccb-request` header on
+  every mutating API call.
+- Immutable caching for hashed assets, lazy-loaded KaTeX CSS, and a release gate that fails if the
+  initial JavaScript/CSS graph exceeds **350 KiB gzip**.
+- A production `npm start` wrapper that verifies the build, opens the browser unless `--no-open` is
+  supplied, forwards shutdown signals, and logs actionable errors.
+- An enhanced `doctor` command and a release `smoke` command that starts the built server against an
+  isolated temporary library, completes a fake-AI course, and verifies graceful shutdown/recovery.
+- Path-safety fuzzing, interrupted-reconciliation repair tests, keyboard/axe checks, security tests,
+  and full Playwright runs in Chromium, Firefox, and WebKit.
+- Release documentation, ADRs, a manual QA checklist, and an optional GitHub Actions workflow.
+
 ## Prerequisites
 
 - Node.js **24.15 or newer** (Node 24 LTS recommended; Node 25 is not supported)
@@ -137,6 +152,9 @@ npm start
 ```
 
 Open <http://127.0.0.1:4310>. The Node process serves both the built Angular app and the API.
+`npm start` opens your default browser; use `npm start -- --no-open`, `CCB_NO_OPEN=1`, or `CI=1` to
+suppress that. It refuses to start if the Angular build is missing, with an instruction to run
+`npm run build` first.
 
 ## Course wizard
 
@@ -219,22 +237,36 @@ Real folders are authoritative for existence and location:
 
 ## Scripts
 
-| Command                 | Purpose                                                                         |
-| ----------------------- | ------------------------------------------------------------------------------- |
-| `npm run dev`           | Run contracts, server, and web watchers                                         |
-| `npm run key:set`       | Store and validate the DeepSeek API key                                         |
-| `npm run key:status`    | Show the key source and validity                                                |
-| `npm run key:remove`    | Remove stored keychain/config keys                                              |
-| `npm run doctor`        | Check Node, directories, key, port, and library readiness                       |
-| `npm run build`         | Build contracts, web, and server in order                                       |
-| `npm start`             | Serve the production build from loopback                                        |
-| `npm run verify`        | Format check, lint, contract validation, typecheck, tests, and production build |
-| `npm test`              | Run contracts, server, and Angular unit tests                                   |
-| `npm run test:coverage` | Run tests with coverage reporting                                               |
-| `npm run e2e`           | Build and run Playwright against an isolated temporary library                  |
-| `npm run e2e:install`   | Install the Chromium browser used by Playwright                                 |
-| `npm run format`        | Format the repository                                                           |
-| `npm run clean`         | Remove build and test output                                                    |
+| Command                 | Purpose                                                                           |
+| ----------------------- | --------------------------------------------------------------------------------- |
+| `npm run dev`           | Run contracts, server, and web watchers                                           |
+| `npm run key:set`       | Store and validate the DeepSeek API key                                           |
+| `npm run key:status`    | Show the key source and validity                                                  |
+| `npm run key:remove`    | Remove stored keychain/config keys                                                |
+| `npm run doctor`        | Check Node, directories, permissions, key, port, web build, and library readiness |
+| `npm run build`         | Build contracts, web, and server in order                                         |
+| `npm start`             | Verify and serve the production build; opens the browser unless `--no-open`       |
+| `npm run verify`        | Format check, lint, contract validation, typecheck, tests, and production build   |
+| `npm test`              | Run contracts, server, and Angular unit tests                                     |
+| `npm run test:coverage` | Run tests with coverage reporting                                                 |
+| `npm run e2e`           | Build and run Playwright in Chromium, Firefox, and WebKit                         |
+| `npm run e2e:chromium`  | Build and run the Playwright suite in Chromium only                               |
+| `npm run e2e:install`   | Install the Chromium, Firefox, and WebKit browsers                                |
+| `npm run smoke`         | Start the built server with a temporary library and run a fake-AI release smoke   |
+| `npm run check:size`    | Enforce the 350 KiB gzip initial-bundle budget                                    |
+| `npm run format`        | Format the repository                                                             |
+| `npm run clean`         | Remove build and test output                                                      |
+
+Release validation:
+
+```bash
+npm run verify
+npm run e2e
+npm run smoke
+```
+
+See [release checklist](./docs/release-checklist.md) and [manual QA checklist](./docs/qa-checklist.md)
+for the full sign-off pass.
 
 Run the browser suite once with:
 
@@ -244,7 +276,8 @@ npm run e2e
 ```
 
 The e2e command starts isolated library/data/config roots under `.tmp/e2e/` for the library, wizard,
-failure, and keyless scenarios. It never touches your real library.
+failure, keyless, and accessibility scenarios. It never touches your real library. The same suite is
+run in Chromium, Firefox, and WebKit.
 
 ## Configuration
 
@@ -261,6 +294,7 @@ Configuration is read from environment variables. No `.env` file is loaded autom
 | `CCB_DEEPSEEK_BASE_URL` | `https://api.deepseek.com`    | DeepSeek API base URL                                           |
 | `CCB_LOG_LEVEL`         | `info`                        | `fatal`, `error`, `warn`, `info`, `debug`, `trace`, or `silent` |
 | `CCB_WEB_DIST`          | `apps/web/dist/web/browser`   | Optional web build override                                     |
+| `CCB_NO_OPEN`           | unset                         | Set to `1` to stop `npm start` opening a browser                |
 | `DEEPSEEK_API_KEY`      | unset                         | Highest-precedence API key source                               |
 
 The following variables are only used by the deterministic fake provider. They exist for automated
@@ -285,8 +319,10 @@ keychain. This is used by the isolated Playwright servers so keyless tests are d
 apps/web/          Angular application
 apps/server/       Express API, filesystem library, sessions, DeepSeek adapter, CLI, and fake AI
 packages/contracts Shared Zod schemas, DTOs, error codes, prompt/outline types, and constants
-docs/              Prompt contract, API, architecture, and architecture decision records
+docs/              Prompt contract, API, architecture, ADRs, and QA/release checklists
 e2e/               Playwright specs, helpers, and isolated server launcher
+scripts/           Production start, release smoke, and bundle-size checks
+.github/           Optional CI workflow (verify, cross-browser E2E, smoke)
 ```
 
 The build order is contracts → web → server. Angular and Node consume the built contracts package.
@@ -302,9 +338,33 @@ The build order is contracts → web → server. Angular and Node consume the bu
 - Structured logs redact authorization headers, cookies, API-key fields, and secret fields; prompts,
   course text, and API keys are never logged.
 - API responses use `Cache-Control: no-store`; hashed static assets are cached immutably.
-- Baseline security headers are enabled. CSP nonce injection, origin/CSRF enforcement, and the full
-  hardening pass are scheduled for Milestone 6.
+- Every response carries a strict CSP with a per-process nonce. The nonce is injected into the
+  Angular app root so runtime style tags are allowed. Inline scripts are absent, `eval` is blocked,
+  and only the self-hosted app and DeepSeek endpoint are reachable.
+- Static files and the SPA fallback pass through the same local request guard. Requests with a
+  non-loopback `Host`, a non-local `Origin`, or a mutating API call without `x-ccb-request: 1` are
+  rejected with `403 FORBIDDEN`.
+- Raw HTML and remote images are removed from Markdown. KaTeX runs with `trust: false`. KaTeX's
+  generated inline style attributes are the only deliberate `style-src-attr 'unsafe-inline'`
+  exception; untrusted Markdown style attributes are stripped before rendering.
 - Secrets are never returned by the health endpoint.
+
+## Backup and uninstall
+
+Your courses are ordinary folders. To back up everything, copy the library root (default
+`~/CrashCourses`). Session snapshots under the OS data directory are optional and can be omitted from
+a course backup.
+
+To uninstall, remove the app directory, the library root, the OS data/config directories, and any
+stored key:
+
+```bash
+npm run key:remove
+rm -rf ~/CrashCourses
+```
+
+Do not delete the library root unless you have a backup. Removing app data does not delete saved
+courses.
 
 ## Troubleshooting
 
@@ -323,5 +383,13 @@ The build order is contracts → web → server. Angular and Node consume the bu
 - **Generation fails with `AI_NETWORK` even though the key is valid:** see
   [KI-001](./docs/known-issues.md#ki-001-deepseek-streaming-always-fails-with-ai_network). This is a
   known DeepSeek `usage: null` parsing bug, not a connectivity problem.
-- **Playwright cannot find Chromium:** run `npm run e2e:install`.
+- **Playwright cannot find a browser:** run `npm run e2e:install`.
+- **`403 FORBIDDEN` from a hand-written API call:** mutating API calls need the local CSRF header
+  `x-ccb-request: 1` and must address `127.0.0.1` or `localhost`. The Angular app adds this header
+  automatically.
+- **`npm start` says the Angular build is missing:** run `npm run build` first, then `npm start`.
+- **The browser did not open:** open the printed URL manually, or check that `xdg-open`/`open` is
+  available. The server is still running when browser launch fails.
+- **CSP errors appear in the browser console:** report them with the affected screen. The app is
+  expected to load with no CSP violations in Chromium, Firefox, and WebKit.
 - **Angular dev server shows an API error:** confirm the server is listening on port 4310.

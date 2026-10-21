@@ -1,10 +1,12 @@
-import { access, mkdir } from 'node:fs/promises';
+import { access, mkdir, stat } from 'node:fs/promises';
 import net from 'node:net';
+import path from 'node:path';
 
 import { FsLibraryRepository } from '../adapters/fs/fs-library-repository.js';
 import { createSecretStore } from '../adapters/secrets/create-secret-store.js';
 import { assertSupportedNode, loadConfig } from '../config.js';
 import { createLogger } from '../logger.js';
+import { verifyWebBuild } from './startup.js';
 import { validateDeepSeekKey } from './key-validation.js';
 
 export interface DoctorCheck {
@@ -28,6 +30,31 @@ async function writableDirectory(name: string, directory: string): Promise<Docto
       name,
       ok: false,
       detail: error instanceof Error ? error.message : `${directory} is not writable.`,
+    };
+  }
+}
+
+async function directoryPrivacy(name: string, directory: string): Promise<DoctorCheck> {
+  if (process.platform === 'win32') {
+    return { name, ok: true, detail: 'POSIX permissions are not used on Windows.' };
+  }
+
+  try {
+    const stats = await stat(directory);
+    const mode = stats.mode & 0o777;
+    const isPrivate = (mode & 0o077) === 0;
+    return {
+      name,
+      ok: true,
+      detail: isPrivate
+        ? `private (${mode.toString(8).padStart(3, '0')})`
+        : `permissions ${mode.toString(8).padStart(3, '0')}; consider chmod 700 ${directory}`,
+    };
+  } catch (error) {
+    return {
+      name,
+      ok: false,
+      detail: error instanceof Error ? error.message : `${directory} could not be inspected.`,
     };
   }
 }
@@ -73,8 +100,19 @@ export async function runDoctor(options: { validateKey?: boolean } = {}): Promis
 
   checks.push(await writableDirectory('Library', config.libraryRoot));
   checks.push(await writableDirectory('Data directory', config.dataDir));
+  checks.push(await writableDirectory('Sessions directory', path.join(config.dataDir, 'sessions')));
   checks.push(await writableDirectory('Config directory', config.configDir));
+  checks.push(await directoryPrivacy('Library permissions', config.libraryRoot));
+  checks.push(await directoryPrivacy('Data permissions', config.dataDir));
+  checks.push(await directoryPrivacy('Config permissions', config.configDir));
   checks.push(await portAvailable(config.port));
+
+  const build = verifyWebBuild(config.webDistDir);
+  checks.push({
+    name: 'Web build',
+    ok: build.ok,
+    detail: build.ok ? config.webDistDir : `${build.message}`,
+  });
 
   try {
     const repository = new FsLibraryRepository({ root: config.libraryRoot });

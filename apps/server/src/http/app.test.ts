@@ -6,7 +6,7 @@ import {
   REQUEST_ID_HEADER,
   type ApiError,
 } from '@ccb/contracts';
-import request from 'supertest';
+import { apiRequest } from '../test/api-request.js';
 import { describe, expect, it } from 'vitest';
 
 import { createLogger } from '../logger.js';
@@ -30,7 +30,7 @@ async function withApp(
 describe('HTTP application', () => {
   it('serves a contract-valid health response with a request id', async () => {
     await withApp(async ({ app }) => {
-      const response = await request(app).get('/api/health').expect(200);
+      const response = await apiRequest(app).get('/api/health').expect(200);
       const parsed = apiSuccessSchema(healthDataSchema).parse(response.body);
       const requestId = response.headers[REQUEST_ID_HEADER];
 
@@ -57,7 +57,7 @@ describe('HTTP application', () => {
 
   it('returns a JSON error envelope for unknown API routes', async () => {
     await withApp(async ({ app }) => {
-      const response = await request(app).get('/api/unknown').expect(404);
+      const response = await apiRequest(app).get('/api/unknown').expect(404);
 
       expect(response.headers['content-type']).toContain('application/json');
       expect(response.body as ApiError).toMatchObject({
@@ -73,7 +73,7 @@ describe('HTTP application', () => {
 
   it('returns a validation error for malformed JSON', async () => {
     await withApp(async ({ app }) => {
-      const response = await request(app)
+      const response = await apiRequest(app)
         .post('/api/health')
         .set('Content-Type', 'application/json')
         .send('{"broken":')
@@ -87,7 +87,7 @@ describe('HTTP application', () => {
 
   it('returns a validation envelope for oversized request bodies', async () => {
     await withApp(async ({ app }) => {
-      const response = await request(app)
+      const response = await apiRequest(app)
         .post('/api/health')
         .set('Content-Type', 'application/json')
         .send(JSON.stringify({ data: 'x'.repeat(70_000) }))
@@ -101,7 +101,7 @@ describe('HTTP application', () => {
 
   it('returns a plain not-found response for non-API routes without a build', async () => {
     await withApp(async ({ app }) => {
-      const response = await request(app)
+      const response = await apiRequest(app)
         .get('/courses/new')
         .set('Accept', 'text/html')
         .expect(404);
@@ -123,7 +123,7 @@ describe('HTTP application', () => {
 
     await withApp(
       async ({ app }) => {
-        await request(app)
+        await apiRequest(app)
           .get('/api/unknown')
           .set('Authorization', 'Bearer super-secret-token')
           .set('Cookie', 'session=super-secret-cookie')

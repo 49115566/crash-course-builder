@@ -258,6 +258,7 @@
 }
 
 .ccb-menu__item {
+  min-height: 2.25rem;
   padding: 0.55rem 0.65rem;
   border: 0;
   border-radius: var(--ccb-radius-sm);
@@ -326,5 +327,20 @@
   .ccb-dialog {
     border-radius: var(--ccb-radius-lg) var(--ccb-radius-lg) 0 0;
     padding-bottom: max(var(--ccb-space-3), env(safe-area-inset-bottom));
+  }
+}
+
+@media (forced-colors: active) {
+  .ccb-button,
+  .ccb-menu__item,
+  .ccb-dialog,
+  .ccb-field input,
+  .ccb-field select,
+  .ccb-field textarea {
+    forced-color-adjust: auto;
+  }
+
+  .cdk-drag-placeholder {
+    border-color: Highlight;
   }
 }

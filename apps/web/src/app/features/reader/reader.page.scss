@@ -390,3 +390,18 @@
     box-shadow: none;
   }
 }
+
+@media (forced-colors: active) {
+  .reader-toolbar {
+    border-color: CanvasText;
+  }
+
+  .reader-toolbar__progress {
+    background: Highlight;
+  }
+
+  .reader-toolbar__stat-mark {
+    border: 1px solid ButtonText;
+    background: ButtonText;
+  }
+}

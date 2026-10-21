@@ -175,3 +175,13 @@
     animation: none;
   }
 }
+
+@media (forced-colors: active) {
+  .in-progress__count {
+    border: 1px solid ButtonText;
+  }
+
+  .in-progress__card {
+    border-color: CanvasText;
+  }
+}

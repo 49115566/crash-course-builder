@@ -1,3 +1,4 @@
+import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
@@ -32,6 +33,9 @@ test('pauses with an error, preserves completed sections, and resumes manually',
   await expect(page.locator('.attention__manual')).toContainText('Nothing restarts automatically');
   await expect(page.locator('.write__section-item.is-completed')).toHaveCount(2);
   await expect(page.locator('.write__section-item.is-failed')).toHaveCount(1);
+
+  const failureAxe = await new AxeBuilder({ page }).analyze();
+  expect(failureAxe.violations).toEqual([]);
 
   await page.getByRole('button', { name: 'Resume writing' }).click();
   await waitForCourseReady(page);

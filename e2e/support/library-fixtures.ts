@@ -17,6 +17,7 @@ export interface SeededCourse {
 export async function seedCourse(
   subjectName: string,
   overrides: Partial<SeededCourse> = {},
+  root = libraryRoot(),
 ): Promise<SeededCourse> {
   const course: SeededCourse = {
     id: '123e4567-e89b-42d3-a456-426614174010',
@@ -28,7 +29,7 @@ export async function seedCourse(
     ...overrides,
   };
 
-  const subjectPath = path.join(libraryRoot(), subjectName);
+  const subjectPath = path.join(root, subjectName);
   const subjectMetadata = JSON.parse(
     await readFile(path.join(subjectPath, '.subject.json'), 'utf8'),
   ) as { id: string; name: string };
