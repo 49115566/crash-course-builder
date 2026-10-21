@@ -32,7 +32,11 @@
     "verify": "npm run format:check && npm run lint && npm run validate:contracts && npm run typecheck && npm run test && npm run build",
     "e2e": "npm run build && playwright test",
     "e2e:install": "playwright install chromium",
-    "clean": "rimraf apps/server/dist apps/web/dist apps/web/.angular packages/contracts/dist coverage playwright-report test-results .tmp"
+    "clean": "rimraf apps/server/dist apps/web/dist apps/web/.angular packages/contracts/dist coverage playwright-report test-results .tmp",
+    "key:set": "npm run key:set -w @ccb/server",
+    "key:status": "npm run key:status -w @ccb/server",
+    "key:remove": "npm run key:remove -w @ccb/server",
+    "doctor": "npm run doctor -w @ccb/server"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.11.0",

@@ -1,4 +1,4 @@
-import type { ScanWarning } from '@ccb/contracts';
+import type { ScanWarning, SubjectSummary } from '@ccb/contracts';
 
 import { LibraryError } from '../domain/library-errors.js';
 import type {
@@ -6,6 +6,8 @@ import type {
   DeleteCourseResult,
   DeleteSubjectOptions,
   DeleteSubjectResult,
+  FinalizeCourseInput,
+  FinalizeCourseResult,
   LibraryRepository,
   LibrarySnapshot,
   SubjectMutationResult,
@@ -46,6 +48,23 @@ export class LibraryService {
 
   async getLibrary(): Promise<LibrarySnapshot> {
     return this.runWithReady(() => this.repository.scan());
+  }
+
+  async getSubject(id: string): Promise<SubjectSummary> {
+    return this.runWithReady(async () => {
+      const snapshot = await this.repository.scan();
+      const subject = snapshot.subjects.find((entry) => entry.id === id);
+
+      if (subject === undefined) {
+        throw new LibraryError('NOT_FOUND', 'The subject could not be found.');
+      }
+
+      return subject;
+    });
+  }
+
+  async finalizeCourse(input: FinalizeCourseInput): Promise<FinalizeCourseResult> {
+    return this.runWithReady(() => this.repository.finalizeCourse(input));
   }
 
   async createSubject(name: string): Promise<SubjectMutationResult> {

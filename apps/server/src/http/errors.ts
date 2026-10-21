@@ -3,8 +3,10 @@ import type { Logger } from 'pino';
 import { ZodError } from 'zod';
 import type { ApiError, ErrorCode } from '@ccb/contracts';
 
+import { AiProviderError } from '../domain/ai-errors.js';
 import { LibraryError } from '../domain/library-errors.js';
 import { OutlineError } from '../domain/outline-errors.js';
+import { SessionError } from '../domain/session-errors.js';
 import { getRequestId } from './response.js';
 
 const STATUS_BY_CODE: Record<ErrorCode, number> = {
@@ -135,9 +137,19 @@ export function toErrorEnvelope(error: unknown): ErrorEnvelopeResult {
     );
   }
 
-  if (error instanceof LibraryError) {
+  if (error instanceof LibraryError || error instanceof SessionError) {
     return toErrorEnvelope(
       new AppError(error.code, error.message, {
+        details: error.details,
+        cause: error,
+      }),
+    );
+  }
+
+  if (error instanceof AiProviderError) {
+    return toErrorEnvelope(
+      new AppError(error.code, error.message, {
+        retryable: error.retryable,
         details: error.details,
         cause: error,
       }),

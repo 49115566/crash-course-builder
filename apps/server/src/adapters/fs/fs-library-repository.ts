@@ -30,11 +30,13 @@ import type {
   DeleteCourseResult,
   DeleteSubjectOptions,
   DeleteSubjectResult,
+  FinalizeCourseInput,
+  FinalizeCourseResult,
   LibraryRepository,
   LibrarySnapshot,
   SubjectMutationResult,
 } from '../../ports/library-repository.js';
-import { writeJsonAtomic, removePath } from './atomic.js';
+import { removePath, syncDirectory, writeJsonAtomic, writeTextFileAtomic } from './atomic.js';
 import { lstatIfExists, relativeLibraryPath, resolveInside } from './fs-paths.js';
 import { readJsonMetadata } from './metadata.js';
 
@@ -392,6 +394,103 @@ export class FsLibraryRepository implements LibraryRepository {
         subjectId: targetSubject.metadata.id,
         updatedAt: timestamp,
       },
+      warnings,
+    };
+  }
+
+  async finalizeCourse(input: FinalizeCourseInput): Promise<FinalizeCourseResult> {
+    const scan = await this.scanInternal();
+    const warnings = [...scan.warnings];
+    const existing = this.findCourse(scan.subjects, input.courseId);
+
+    if (existing !== undefined) {
+      return {
+        course: existing.course.summary,
+        relativePath: relativeLibraryPath(this.root, existing.course.folderPath),
+        warnings,
+      };
+    }
+
+    if (input.metadata.id !== input.courseId) {
+      throw new LibraryError(
+        'VALIDATION_FAILED',
+        'The assembled course identity does not match the reserved course id.',
+      );
+    }
+
+    const subject = scan.subjects.find((entry) => entry.metadata.id === input.subjectId);
+
+    if (subject === undefined) {
+      throw new LibraryError(
+        'NOT_FOUND',
+        'The destination subject no longer exists. Recreate it or discard this session.',
+      );
+    }
+
+    const metadata: CourseMetadata = courseMetadataSchema.parse({
+      ...input.metadata,
+      subject: { id: subject.metadata.id, name: subject.metadata.name },
+    });
+    const stagePath = path.join(this.stagingDirectory, `finalize-${input.courseId}`);
+
+    try {
+      await this.ensureStagingDirectory();
+      await removePath(stagePath);
+      await mkdir(stagePath, { mode: 0o700 });
+      await writeTextFileAtomic(path.join(stagePath, 'course.md'), input.courseMarkdown);
+      await writeTextFileAtomic(path.join(stagePath, 'outline.md'), input.outlineMarkdown);
+      await writeJsonAtomic(path.join(stagePath, 'meta.json'), metadata);
+      await syncDirectory(stagePath);
+    } catch (error) {
+      await removePath(stagePath).catch(() => undefined);
+      throw this.fsFailure(error, 'The course could not be prepared for saving.');
+    }
+
+    const targetNames = subject.courses.map((course) => path.basename(course.folderPath));
+    let folderName = uniqueFolderName(input.folderName, targetNames, TOPIC_MAX_LENGTH);
+    let destination = resolveInside(subject.folderPath, folderName);
+    let moved = false;
+
+    for (let attempt = 0; attempt < 20 && !moved; attempt += 1) {
+      try {
+        await rename(stagePath, destination);
+        moved = true;
+      } catch (error) {
+        const code = errorCode(error);
+        if (code === 'EEXIST' || code === 'ENOTEMPTY') {
+          targetNames.push(folderName);
+          folderName = uniqueFolderName(input.folderName, targetNames, TOPIC_MAX_LENGTH);
+          destination = resolveInside(subject.folderPath, folderName);
+          continue;
+        }
+        await removePath(stagePath).catch(() => undefined);
+        throw this.fsFailure(error, 'The finished course could not be moved into the library.');
+      }
+    }
+
+    if (!moved) {
+      await removePath(stagePath).catch(() => undefined);
+      throw new LibraryError(
+        'CONFLICT',
+        'A folder with this course name already exists in the destination subject.',
+      );
+    }
+
+    await syncDirectory(subject.folderPath).catch(() => undefined);
+
+    return {
+      course: {
+        id: metadata.id,
+        subjectId: subject.metadata.id,
+        topic: metadata.topic,
+        title: metadata.title,
+        audience: metadata.audience,
+        createdAt: metadata.createdAt,
+        updatedAt: metadata.updatedAt,
+        status: metadata.status,
+        stats: metadata.stats,
+      },
+      relativePath: relativeLibraryPath(this.root, destination),
       warnings,
     };
   }

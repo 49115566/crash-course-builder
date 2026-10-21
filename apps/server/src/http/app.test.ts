@@ -44,7 +44,7 @@ describe('HTTP application', () => {
         checks: {
           process: { status: 'ok' },
           library: { status: 'ok' },
-          key: { status: 'unknown' },
+          key: { status: 'ok' },
         },
       });
       expect(response.headers['cache-control']).toBe('no-store');
@@ -141,6 +141,9 @@ describe('HTTP application', () => {
           logger,
           version: '0.1.0-test',
           libraryService: context.service,
+          sessionService: context.sessionService,
+          events: context.events,
+          secrets: context.secrets,
         }),
     );
   });

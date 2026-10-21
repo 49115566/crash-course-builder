@@ -25,6 +25,7 @@ export interface FakeAiProviderOptions {
   chunkSize?: number;
   delayMs?: number;
   failure?: FakeAiFailure;
+  failureOnce?: boolean;
 }
 
 export class FakeAiProvider implements AiProvider {
@@ -32,7 +33,8 @@ export class FakeAiProvider implements AiProvider {
   private readonly sectionMarkdown: (input: SectionInput) => string;
   private readonly chunkSize: number;
   private readonly delayMs: number;
-  private readonly failure: FakeAiFailure | undefined;
+  private failure: FakeAiFailure | undefined;
+  private readonly failureOnce: boolean;
 
   constructor(options: FakeAiProviderOptions = {}) {
     this.outlineMarkdown = options.outlineMarkdown ?? FAKE_OUTLINE_MARKDOWN;
@@ -40,6 +42,7 @@ export class FakeAiProvider implements AiProvider {
     this.chunkSize = Math.max(1, Math.floor(options.chunkSize ?? 24));
     this.delayMs = Math.max(0, options.delayMs ?? 0);
     this.failure = options.failure;
+    this.failureOnce = options.failureOnce ?? false;
   }
 
   streamOutline(input: OutlineInput, signal: AbortSignal): AsyncIterable<AiChunk> {
@@ -74,6 +77,7 @@ export class FakeAiProvider implements AiProvider {
 
     for (const [index, chunk] of chunks.entries()) {
       if (failure !== undefined && index === failure.afterChunks) {
+        this.consumeFailure();
         throw this.failureError(failure);
       }
 
@@ -88,7 +92,14 @@ export class FakeAiProvider implements AiProvider {
     }
 
     if (failure !== undefined && failure.afterChunks >= chunks.length) {
+      this.consumeFailure();
       throw this.failureError(failure);
+    }
+  }
+
+  private consumeFailure(): void {
+    if (this.failureOnce) {
+      this.failure = undefined;
     }
   }
 

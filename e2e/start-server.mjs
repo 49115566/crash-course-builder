@@ -31,6 +31,8 @@ const child = spawn(process.execPath, [serverEntry], {
     CCB_DATA_DIR: dataDir,
     CCB_CONFIG_DIR: configDir,
     CCB_LOG_LEVEL: 'warn',
+    DEEPSEEK_API_KEY: 'e2e-local-test-key',
+    CCB_AI_PROVIDER: 'fake',
   },
 });
 
