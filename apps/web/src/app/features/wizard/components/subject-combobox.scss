@@ -1,0 +1,123 @@
+:host {
+  display: block;
+}
+
+.combobox {
+  position: relative;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.combobox__control {
+  position: relative;
+}
+
+.combobox input {
+  width: 100%;
+  min-height: 2.55rem;
+  padding: 0.55rem 2.2rem 0.55rem 0.75rem;
+  border: 1px solid var(--ccb-line-strong);
+  border-radius: var(--ccb-radius-sm);
+  background: var(--ccb-surface-raised);
+  color: var(--ccb-ink);
+  font-size: 0.92rem;
+}
+
+.combobox input:focus {
+  border-color: var(--ccb-accent);
+  box-shadow: 0 0 0 3px var(--ccb-accent-soft);
+  outline: none;
+}
+
+.combobox input[aria-invalid='true'] {
+  border-color: var(--ccb-danger);
+}
+
+.combobox__chevron {
+  position: absolute;
+  top: 50%;
+  right: 0.9rem;
+  width: 0.45rem;
+  height: 0.45rem;
+  border-right: 1.5px solid var(--ccb-ink-muted);
+  border-bottom: 1.5px solid var(--ccb-ink-muted);
+  pointer-events: none;
+  transform: translateY(-70%) rotate(45deg);
+}
+
+.combobox.is-open .combobox__chevron {
+  transform: translateY(-30%) rotate(225deg);
+}
+
+.combobox__list {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 0.3rem);
+  right: 0;
+  left: 0;
+  max-height: 15rem;
+  margin: 0;
+  padding: 0.3rem;
+  overflow-y: auto;
+  border: 1px solid var(--ccb-line);
+  border-radius: var(--ccb-radius-md);
+  background: var(--ccb-surface-raised);
+  box-shadow: var(--ccb-shadow-raised);
+  list-style: none;
+}
+
+.combobox__option {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--ccb-space-1);
+  padding: 0.55rem 0.65rem;
+  border-radius: var(--ccb-radius-sm);
+  color: var(--ccb-ink);
+  font-size: 0.88rem;
+  cursor: pointer;
+}
+
+.combobox__option:hover,
+.combobox__option.is-active {
+  background: var(--ccb-accent-soft);
+  color: var(--ccb-accent-strong);
+}
+
+.combobox__option[aria-disabled='true'] {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.combobox__count {
+  color: var(--ccb-ink-muted);
+  font-size: 0.72rem;
+}
+
+.combobox__option--create {
+  color: var(--ccb-accent-strong);
+  font-weight: 600;
+}
+
+.combobox__create-mark {
+  display: inline-grid;
+  place-items: center;
+  width: 1.2rem;
+  height: 1.2rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ccb-accent) 12%, transparent);
+  font-size: 0.85rem;
+}
+
+.combobox__empty {
+  padding: 0.6rem 0.65rem;
+  color: var(--ccb-ink-muted);
+  font-size: 0.82rem;
+}
+
+.combobox__hint {
+  margin: 0;
+  color: var(--ccb-danger);
+  font-size: 0.76rem;
+  font-weight: 550;
+}

@@ -2,6 +2,25 @@ import { defineConfig, devices } from '@playwright/test';
 
 const baseURL = 'http://127.0.0.1:4310';
 
+function server(
+  name: string,
+  port: number,
+  options: { key: boolean; env?: Record<string, string> } = { key: true },
+) {
+  return {
+    command: 'node e2e/start-server.mjs',
+    url: `http://127.0.0.1:${String(port)}/api/health`,
+    reuseExistingServer: false,
+    timeout: 120_000,
+    env: {
+      CCB_E2E_NAME: name,
+      CCB_E2E_PORT: String(port),
+      CCB_E2E_WITH_KEY: options.key ? '1' : '0',
+      ...options.env,
+    },
+  };
+}
+
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: false,
@@ -14,12 +33,32 @@ export default defineConfig({
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
   },
-  webServer: {
-    command: 'node e2e/start-server.mjs',
-    url: `${baseURL}/api/health`,
-    reuseExistingServer: false,
-    timeout: 120_000,
-  },
+  webServer: [
+    server('main', 4310),
+    server('wizard', 4311, {
+      key: true,
+      env: {
+        CCB_FAKE_AI_DELAY_MS: '35',
+        CCB_FAKE_AI_CHUNK_SIZE: '20',
+      },
+    }),
+    server('failure', 4312, {
+      key: true,
+      env: {
+        CCB_FAKE_AI_DELAY_MS: '12',
+        CCB_FAKE_AI_CHUNK_SIZE: '24',
+        CCB_FAKE_AI_FAIL_SCOPE: 'section',
+        CCB_FAKE_AI_FAIL_SECTION: '3',
+        CCB_FAKE_AI_FAIL_AFTER_CHUNKS: '1',
+        CCB_FAKE_AI_FAIL_ONCE: 'true',
+        CCB_FAKE_AI_FAIL_CODE: 'AI_TIMEOUT',
+      },
+    }),
+    server('keyless', 4313, {
+      key: false,
+      env: { CCB_FAKE_AI_DELAY_MS: '0' },
+    }),
+  ],
   projects: [
     {
       name: 'chromium',

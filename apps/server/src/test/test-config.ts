@@ -15,6 +15,8 @@ export function makeConfig(overrides: Partial<AppConfig> = {}): AppConfig {
     deepseekBaseUrl: 'https://api.deepseek.com',
     logLevel: 'silent',
     webDistDir: '/tmp/ccb-test-no-web-build',
+    fakeAi: { delayMs: 0, chunkSize: 24 },
+    disableKeychain: false,
     ...overrides,
   };
 }

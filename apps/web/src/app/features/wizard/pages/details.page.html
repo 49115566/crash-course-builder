@@ -1,0 +1,161 @@
+@if (isEdit && session() === null) {
+<ccb-session-gate
+  [errorMessage]="store.loadError()?.message ?? 'This session could not be loaded.'"
+  (retry)="retryLoad()"
+/>
+} @else {
+<section class="details" aria-labelledby="details-title">
+  <header class="details__header">
+    <p class="ccb-eyebrow">{{ isEdit ? 'Edit course inputs' : 'Step 1 · Details' }}</p>
+    <h2 id="details-title" ccbWizardHeading>
+      {{ isEdit ? 'Adjust the brief' : 'What should this course teach?' }}
+    </h2>
+    <p class="ccb-lede">
+      Give the course a clear topic and audience. The next step shows the exact prompt before any AI
+      call is made.
+    </p>
+  </header>
+
+  @if (editingReview()) {
+  <div class="details__notice" role="note">
+    <p class="details__notice-title">This course already has an outline</p>
+    <p>
+      Saving changes resets the session to a draft and clears the current outline, prompts, and
+      review state. Nothing has been written yet, so no generated sections are lost.
+    </p>
+  </div>
+  }
+
+  <form class="details__form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+    <div class="ccb-field">
+      <label for="course-subject">Subject</label>
+
+      @if (subjectsStatus() === 'loading') {
+      <div class="details__subjects-loading" role="status">
+        <ccb-spinner />
+        <span>Reading your subjects…</span>
+      </div>
+      } @else if (subjectsStatus() === 'error') {
+      <div class="details__subjects-error" role="alert">
+        <p>{{ subjectsError()?.message ?? 'Your subjects could not be loaded.' }}</p>
+        <button
+          type="button"
+          class="ccb-button ccb-button--ghost ccb-button--sm"
+          (click)="loadSubjects()"
+        >
+          Try again
+        </button>
+      </div>
+      } @else {
+      <ccb-subject-combobox
+        inputId="course-subject"
+        formControlName="subjectId"
+        [subjects]="subjects()"
+        [invalid]="form.controls.subjectId.invalid && form.controls.subjectId.touched"
+        [describedBy]="form.controls.subjectId.invalid && form.controls.subjectId.touched ? 'course-subject-error' : 'course-subject-hint'"
+        [creating]="creatingSubject()"
+        (createRequested)="createSubject($event)"
+      />
+      @if (form.controls.subjectId.invalid && form.controls.subjectId.touched) {
+      <p id="course-subject-error" class="ccb-field__error">{{ subjectError() }}</p>
+      } @else {
+      <p id="course-subject-hint" class="ccb-field__hint">
+        Courses are saved as folders inside the subject you choose. Type a new name to create a
+        subject here.
+      </p>
+      } @if (subjectCreateError(); as error) {
+      <p class="ccb-field__error" role="alert">{{ error }}</p>
+      } }
+    </div>
+
+    <div class="ccb-field">
+      <label for="course-topic">Topic</label>
+      <input
+        id="course-topic"
+        type="text"
+        autocomplete="off"
+        formControlName="topic"
+        [attr.maxlength]="topicMax"
+        [attr.aria-invalid]="form.controls.topic.invalid && form.controls.topic.touched"
+        [attr.aria-describedby]="form.controls.topic.invalid && form.controls.topic.touched ? 'course-topic-error' : 'course-topic-hint'"
+      />
+      @if (form.controls.topic.invalid && form.controls.topic.touched) {
+      <p id="course-topic-error" class="ccb-field__error">{{ topicError() }}</p>
+      } @else {
+      <p id="course-topic-hint" class="ccb-field__hint">
+        Be specific: “Vector Databases for Backend Engineers” beats “Databases”.
+      </p>
+      }
+    </div>
+
+    <div class="ccb-field">
+      <label for="course-audience">Audience</label>
+      <input
+        id="course-audience"
+        type="text"
+        autocomplete="off"
+        formControlName="audience"
+        [attr.maxlength]="audienceMax"
+        [attr.aria-invalid]="form.controls.audience.invalid && form.controls.audience.touched"
+        [attr.aria-describedby]="form.controls.audience.invalid && form.controls.audience.touched ? 'course-audience-error' : 'course-audience-hint'"
+      />
+      @if (form.controls.audience.invalid && form.controls.audience.touched) {
+      <p id="course-audience-error" class="ccb-field__error">{{ audienceError() }}</p>
+      } @else {
+      <p id="course-audience-hint" class="ccb-field__hint">
+        Who is this for? Example: software engineers new to vector search.
+      </p>
+      }
+    </div>
+
+    <div class="ccb-field">
+      <div class="details__label-row">
+        <label for="course-instructions">Additional instructions <span>(optional)</span></label>
+        <span class="details__counter" [class.is-low]="instructionsRemaining() < 200">
+          {{ instructionsLength() }} / {{ instructionsMax }}
+        </span>
+      </div>
+      <textarea
+        id="course-instructions"
+        rows="4"
+        formControlName="instructions"
+        placeholder="Use practical examples. Prefer e-commerce scenarios. Keep the tone direct."
+        [attr.aria-invalid]="form.controls.instructions.invalid && form.controls.instructions.touched"
+        [attr.aria-describedby]="instructionsError() ? 'course-instructions-error' : 'course-instructions-hint'"
+      ></textarea>
+      @if (instructionsError(); as error) {
+      <p id="course-instructions-error" class="ccb-field__error">{{ error }}</p>
+      } @else {
+      <p id="course-instructions-hint" class="ccb-field__hint">
+        These instructions are repeated in the shared brief for every section, so they shape the
+        prose as well as the outline.
+      </p>
+      }
+    </div>
+
+    @if (store.actionError() ?? submitError(); as error) {
+    <p class="details__error" role="alert">{{ error.message }}</p>
+    }
+
+    <footer class="details__actions">
+      @if (isEdit) {
+      <button type="button" class="ccb-button ccb-button--ghost" (click)="backToCurrentStep()">
+        Back without saving
+      </button>
+      } @else {
+      <a class="ccb-button ccb-button--ghost" routerLink="/">Cancel</a>
+      }
+
+      <button type="submit" class="ccb-button ccb-button--primary" [disabled]="!canSubmit()">
+        @if (saving()) {
+        <ccb-spinner />
+        <span>Saving…</span>
+        } @else {
+        <span>{{ isEdit ? 'Save inputs & rebuild preview' : 'Continue to prompt preview' }}</span>
+        <span aria-hidden="true">→</span>
+        }
+      </button>
+    </footer>
+  </form>
+</section>
+}

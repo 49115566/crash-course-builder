@@ -1,0 +1,32 @@
+<section class="wizard" aria-labelledby="wizard-title">
+  <header class="wizard__topbar">
+    <a class="wizard__back" routerLink="/">
+      <span aria-hidden="true">←</span>
+      Library
+    </a>
+
+    @if (active()) {
+    <button
+      type="button"
+      class="wizard__discard"
+      [disabled]="store.action() === 'discard'"
+      (click)="discard()"
+    >
+      {{ store.action() === 'discard' ? 'Discarding…' : 'Discard session' }}
+    </button>
+    }
+  </header>
+
+  <div class="wizard__masthead">
+    <p class="ccb-eyebrow">New course</p>
+    <h1 id="wizard-title" class="wizard__title" tabindex="-1">Build a crash course</h1>
+    <p class="wizard__lede">
+      Shape the brief, review the exact prompts, approve the outline, and watch it become a readable
+      course on your computer.
+    </p>
+  </div>
+
+  <ccb-wizard-progress [current]="currentStep()" [session]="store.session()" />
+
+  <router-outlet />
+</section>

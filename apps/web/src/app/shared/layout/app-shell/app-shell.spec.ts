@@ -3,10 +3,19 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { provideZonelessChangeDetection } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import type { ApiSuccess, HealthData } from '@ccb/contracts';
+import type { ApiSuccess, BootstrapData, HealthData } from '@ccb/contracts';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { AppShell } from './app-shell';
+
+const bootstrapData: BootstrapData = {
+  version: '0.1.0',
+  libraryRoot: '/home/tester/CrashCourses',
+  library: { status: 'ok' },
+  provider: 'deepseek',
+  model: 'deepseek-chat',
+  key: { configured: true, source: 'environment' },
+};
 
 const healthData: HealthData = {
   status: 'ok',
@@ -41,6 +50,16 @@ describe('AppShell', () => {
     TestBed.resetTestingModule();
   });
 
+  function flushBootstrap(configured = true): void {
+    httpMock.expectOne('/api/bootstrap').flush({
+      data: {
+        ...bootstrapData,
+        key: { configured, source: configured ? 'environment' : 'none' },
+      },
+      requestId: 'bootstrap-1',
+    } satisfies ApiSuccess<BootstrapData>);
+  }
+
   it('renders the skip link, landmarks, and brand', () => {
     const fixture = TestBed.createComponent(AppShell);
     fixture.detectChanges();
@@ -53,6 +72,7 @@ describe('AppShell', () => {
     expect(element.querySelector('footer')).toBeTruthy();
     expect(element.textContent).toContain('Crash Course Builder');
 
+    flushBootstrap();
     httpMock.expectOne('/api/health').flush({
       data: healthData,
       requestId: 'request-1',
@@ -63,6 +83,7 @@ describe('AppShell', () => {
     const fixture = TestBed.createComponent(AppShell);
     fixture.detectChanges();
 
+    flushBootstrap();
     httpMock.expectOne('/api/health').flush({
       data: healthData,
       requestId: 'request-1',
@@ -77,6 +98,7 @@ describe('AppShell', () => {
     const fixture = TestBed.createComponent(AppShell);
     fixture.detectChanges();
 
+    flushBootstrap();
     httpMock
       .expectOne('/api/health')
       .flush('unavailable', { status: 0, statusText: 'Unknown Error' });
@@ -84,5 +106,21 @@ describe('AppShell', () => {
 
     expect(fixture.nativeElement.textContent).toContain('Local service unavailable');
     expect(fixture.nativeElement.textContent).toContain('Start it with npm run dev');
+  });
+
+  it('shows a persistent key banner when no DeepSeek key is configured', async () => {
+    const fixture = TestBed.createComponent(AppShell);
+    fixture.detectChanges();
+
+    flushBootstrap(false);
+    httpMock.expectOne('/api/health').flush({
+      data: healthData,
+      requestId: 'request-1',
+    } satisfies ApiSuccess<HealthData>);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('DeepSeek key not set');
+    expect(fixture.nativeElement.textContent).toContain('npm run key:set');
   });
 });

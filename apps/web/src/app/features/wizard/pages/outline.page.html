@@ -1,0 +1,260 @@
+@if (session(); as session) { @if (generatingOutline()) {
+<section class="outline" aria-labelledby="outline-title">
+  <header class="outline__header">
+    <p class="ccb-eyebrow">Step 3 · Outline</p>
+    <h2 id="outline-title" ccbWizardHeading>Composing your outline</h2>
+    <p class="ccb-lede">
+      The AI is proposing a cover and numbered sections. You will review everything before any
+      section prose is written.
+    </p>
+  </header>
+
+  <div class="outline__stream" role="status" aria-live="polite">
+    <div class="outline__stream-heading">
+      <span class="outline__live-dot" aria-hidden="true"></span>
+      <span>Live outline draft</span>
+      <ccb-spinner />
+    </div>
+    <pre tabindex="0" aria-label="Streaming outline draft">
+{{ liveText() || 'Waiting for the first tokens…' }}</pre>
+  </div>
+
+  <ccb-key-required-notice [visible]="keyMissing()" />
+  <ccb-action-error-notice [error]="actionError()" (dismiss)="dismissError()" />
+
+  <footer class="outline__actions">
+    <button type="button" class="ccb-button ccb-button--ghost" (click)="stopOutline()">
+      Stop generating
+    </button>
+  </footer>
+</section>
+} @else if (pausedOutline()) {
+<section class="outline outline--single" aria-labelledby="outline-paused-title">
+  <header class="outline__header">
+    <p class="ccb-eyebrow">Step 3 · Outline</p>
+    <h2 id="outline-paused-title" ccbWizardHeading>Outline paused</h2>
+  </header>
+
+  <ccb-attention-panel
+    [session]="session"
+    [error]="lastError()"
+    [busy]="busy()"
+    [resuming]="store.action() === 'resume'"
+    (resumeRequested)="resume()"
+  />
+  @if (store.canRegenerate()) {
+  <div class="outline__recovery-actions">
+    <button
+      type="button"
+      class="ccb-button ccb-button--secondary"
+      [disabled]="busy() || keyMissing()"
+      (click)="regenerate()"
+    >
+      Regenerate outline
+    </button>
+  </div>
+  }
+  <ccb-key-required-notice [visible]="keyMissing()" />
+  <ccb-action-error-notice [error]="actionError()" (dismiss)="dismissError()" />
+</section>
+} @else if (outline(); as outline) {
+<section class="outline" aria-labelledby="outline-title">
+  <header class="outline__header outline__header--split">
+    <div>
+      <p class="ccb-eyebrow">Step 3 · Outline</p>
+      <h2 id="outline-title" ccbWizardHeading>
+        {{ readOnly() ? 'Approved outline' : 'Review the outline' }}
+      </h2>
+      <p class="ccb-lede">
+        @if (session.status === 'completed') { This course is complete. The outline is kept here for
+        reference. } @else if (readOnly()) { Writing has started. This outline is now read-only. }
+        @else { Check the cover, section order, and the exact prompts for every section. Approving
+        is the second and final gate before writing. }
+      </p>
+    </div>
+    <div class="outline__stats" aria-label="Outline statistics">
+      <div>
+        <span class="outline__stat-value">{{ sectionCount() }}</span>
+        <span class="outline__stat-label">sections</span>
+      </div>
+      <div>
+        <span class="outline__stat-value">~{{ estimatedMinutes() }} min</span>
+        <span class="outline__stat-label">reading</span>
+      </div>
+      <div>
+        <span class="outline__stat-value">{{ remainingCalls() }}</span>
+        <span class="outline__stat-label">section calls</span>
+      </div>
+    </div>
+  </header>
+
+  @if (readOnly()) {
+  <div class="outline__readonly" role="note">
+    <p class="outline__readonly-title">
+      {{ session.status === 'completed' ? 'This course is complete' : 'Writing has already started'
+      }}
+    </p>
+    <p>
+      @if (session.status === 'completed') { The saved course keeps this approved outline. Return to
+      the library to read it. } @else { Inputs can no longer be edited and the outline cannot be
+      regenerated. Resume or discard this session instead; completed sections are preserved. }
+    </p>
+    <button
+      type="button"
+      class="ccb-button ccb-button--secondary ccb-button--sm"
+      (click)="openProgress()"
+    >
+      Go to writing progress
+    </button>
+  </div>
+  }
+
+  <div class="outline__grid">
+    <article class="outline__cover" aria-labelledby="cover-title">
+      <div class="outline__cover-top">
+        <span class="outline__cover-subject">{{ session.subject.name }}</span>
+        <span class="outline__cover-tag">Crash course</span>
+      </div>
+      <h3 id="cover-title">{{ outline.title }}</h3>
+      @if (outline.cover.promise; as promise) {
+      <p class="outline__promise">{{ promise }}</p>
+      } @if (outline.cover.audience; as audience) {
+      <p class="outline__cover-meta"><span>Audience</span>{{ audience }}</p>
+      } @if (outline.cover.summary; as summary) {
+      <p class="outline__summary">{{ summary }}</p>
+      }
+      <p class="outline__cover-foot">Saved in {{ session.subject.name }}</p>
+    </article>
+
+    <div class="outline__sections-wrap">
+      <div class="outline__sections-heading">
+        <h3>In this course</h3>
+        <span>{{ sectionCount() }} sections</span>
+      </div>
+      <ol class="outline__sections">
+        @for (section of outline.sections; track section.number) {
+        <li class="outline__section">
+          <span class="outline__number">{{ section.number }}</span>
+          <div>
+            <h4>{{ section.title }}</h4>
+            <ul>
+              @for (bullet of section.bullets; track $index) {
+              <li>{{ bullet }}</li>
+              }
+            </ul>
+          </div>
+        </li>
+        }
+      </ol>
+    </div>
+  </div>
+
+  <section class="outline__prompts" aria-labelledby="continuations-title">
+    <div class="outline__sections-heading">
+      <div>
+        <h3 id="continuations-title">Continuation prompts</h3>
+        <p>These are the exact prompts used for each section, including your shared brief.</p>
+      </div>
+      <span>{{ session.sections.length }} calls</span>
+    </div>
+
+    <details class="outline__shared-system">
+      <summary>Shared system prompt</summary>
+      <pre tabindex="0" aria-label="Shared system prompt">
+{{ session.sections[0]?.prompt.system }}</pre>
+    </details>
+
+    <div class="outline__prompt-list">
+      @for (section of session.sections; track section.number) {
+      <details class="outline__prompt">
+        <summary>
+          <span class="outline__prompt-number">{{ section.number }}</span>
+          <span class="outline__prompt-title">{{ section.title }}</span>
+          <span class="outline__prompt-meta">~{{ section.wordBudget }} words</span>
+        </summary>
+        <div class="outline__prompt-body">
+          <p class="outline__prompt-label">User message</p>
+          <pre tabindex="0" [attr.aria-label]="'Continuation prompt for section ' + section.number">
+{{ section.prompt.user }}</pre>
+          <p class="outline__prompt-label">System message</p>
+          <pre tabindex="0" [attr.aria-label]="'System prompt for section ' + section.number">
+{{ section.prompt.system }}</pre>
+        </div>
+      </details>
+      }
+    </div>
+  </section>
+
+  <ccb-key-required-notice [visible]="keyMissing()" />
+  <ccb-action-error-notice [error]="actionError()" (dismiss)="dismissError()" />
+
+  @if (!readOnly()) {
+  <div class="outline__gate" role="note">
+    <span class="outline__gate-mark" aria-hidden="true">2</span>
+    <div>
+      <p class="outline__gate-title">This is the last review gate</p>
+      <p>
+        Approving starts section 1. Once writing begins you can pause or stop, but you cannot edit
+        inputs or regenerate this outline.
+      </p>
+    </div>
+  </div>
+  }
+
+  <footer class="outline__actions">
+    @if (!readOnly()) {
+    <button
+      type="button"
+      class="ccb-button ccb-button--ghost"
+      [disabled]="busy()"
+      (click)="editInputs()"
+    >
+      Edit inputs
+    </button>
+    <button
+      type="button"
+      class="ccb-button ccb-button--secondary"
+      [disabled]="busy() || !store.canRegenerate() || keyMissing()"
+      (click)="regenerate()"
+    >
+      @if (store.action() === 'regenerate-outline') {
+      <ccb-spinner />
+      <span>Regenerating…</span>
+      } @else { Regenerate outline }
+    </button>
+    <button
+      type="button"
+      class="ccb-button ccb-button--primary"
+      [disabled]="busy() || !store.canApprove() || keyMissing()"
+      (click)="approve()"
+    >
+      @if (store.action() === 'approve') {
+      <ccb-spinner />
+      <span>Starting writing…</span>
+      } @else {
+      <span>Approve & start writing</span>
+      <span aria-hidden="true">→</span>
+      }
+    </button>
+    } @else {
+    <button type="button" class="ccb-button ccb-button--primary" (click)="openProgress()">
+      View writing progress
+    </button>
+    }
+  </footer>
+</section>
+} @else {
+<section class="outline outline--single">
+  <ccb-session-gate
+    [errorMessage]="store.loadError()?.message ?? 'The outline is not available yet.'"
+    (retry)="retryLoad()"
+  />
+</section>
+} } @else if (store.loadStatus() === 'error') {
+<ccb-session-gate
+  [errorMessage]="store.loadError()?.message ?? 'This session could not be loaded.'"
+  (retry)="retryLoad()"
+/>
+} @else {
+<ccb-session-gate [errorMessage]="null" />
+}

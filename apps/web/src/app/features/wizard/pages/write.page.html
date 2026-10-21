@@ -1,0 +1,240 @@
+@if (session(); as session) {
+<section class="write" aria-labelledby="write-title">
+  <header class="write__header">
+    <div class="write__heading">
+      <p class="ccb-eyebrow">Step 4 · Write</p>
+      <h2 id="write-title" ccbWizardHeading>
+        @if (isComplete()) { Your course is ready } @else if (needsAttention()) { Paused — needs
+        attention } @else if (isPaused()) { Writing paused } @else if (isFinalizing()) { Saving your
+        course } @else { Writing {{ session.input.topic }} }
+      </h2>
+      <p class="ccb-lede">
+        @if (isComplete()) { All sections are written and saved as readable Markdown on this
+        computer. } @else if (needsAttention()) { The current section stopped on an error. Completed
+        sections are safe. } @else if (isPaused()) { The session is resting after the last completed
+        section. } @else { {{ session.subject.name }} · {{ session.input.audience }} }
+      </p>
+    </div>
+    <div class="write__header-meta">
+      <span ccbBadge [tone]="store.statusTone()">{{ store.statusLabel() }}</span>
+      @if (!isComplete()) {
+      <span class="write__connection" [class.is-live]="connection() === 'open'">
+        <span class="write__connection-dot" aria-hidden="true"></span>
+        {{ connectionLabel() }}
+      </span>
+      }
+    </div>
+  </header>
+
+  <ccb-key-required-notice [visible]="keyMissing()" />
+  <ccb-action-error-notice [error]="actionError()" (dismiss)="dismissError()" />
+
+  @if (isComplete()) {
+  <section class="write__success" aria-labelledby="success-title">
+    <div class="write__success-mark" aria-hidden="true">✓</div>
+    <div class="write__success-body">
+      <p class="ccb-eyebrow">Saved locally</p>
+      <h3 id="success-title">Your crash course is on your shelf</h3>
+      <p class="write__success-note">
+        The course, outline, and metadata are written as separate files. They stay readable outside
+        the app and are never uploaded.
+      </p>
+      <dl class="write__success-stats">
+        <div>
+          <dt>Sections</dt>
+          <dd>{{ stats().sections }}</dd>
+        </div>
+        <div>
+          <dt>Words</dt>
+          <dd>{{ stats().words.toLocaleString() }}</dd>
+        </div>
+        <div>
+          <dt>Reading time</dt>
+          <dd>{{ stats().readingMinutes }} min</dd>
+        </div>
+      </dl>
+      <div class="write__path">
+        <span class="write__path-label">Saved in</span>
+        <code>{{ store.savedPath() }}</code>
+        <button type="button" class="write__path-copy" (click)="copyPath()">Copy</button>
+      </div>
+    </div>
+  </section>
+
+  <footer class="write__success-actions">
+    <a class="ccb-button ccb-button--primary" routerLink="/">Back to library</a>
+  </footer>
+  } @else { @if (needsAttention() || isPaused()) {
+  <ccb-attention-panel
+    [session]="session"
+    [error]="lastError()"
+    [busy]="busy()"
+    [resuming]="store.action() === 'resume'"
+    (resumeRequested)="resume()"
+  />
+  } @else {
+  <section class="write__progress" aria-labelledby="progress-title">
+    <div class="write__progress-heading">
+      <div>
+        <h3 id="progress-title">
+          @if (isFinalizing()) { Assembling the final files… } @else if (activeSection(); as active)
+          { Section {{ active.number }} of {{ total() }}: {{ active.title }} } @else { Preparing the
+          first section }
+        </h3>
+        <p>
+          {{ completed() }} of {{ total() }} sections complete · {{ wordCount().toLocaleString() }}
+          words written
+        </p>
+      </div>
+      @if (pausing()) {
+      <span class="write__pausing" role="status">Pausing after this section…</span>
+      }
+    </div>
+    <div
+      class="write__bar"
+      role="progressbar"
+      aria-label="Course writing progress"
+      aria-valuemin="0"
+      aria-valuemax="100"
+      [attr.aria-valuenow]="progress()"
+      [attr.aria-valuetext]="completed() + ' of ' + total() + ' sections complete'"
+    >
+      <span [style.width.%]="progress()"></span>
+    </div>
+  </section>
+  }
+
+  <div class="write__grid">
+    <section class="write__manuscript" aria-labelledby="manuscript-title">
+      @if (isFinalizing()) {
+      <div class="write__saving" role="status" aria-live="polite">
+        <ccb-spinner />
+        <div>
+          <h3 id="manuscript-title">Saving to your library</h3>
+          <p>
+            Every section is complete. The course is being assembled in a hidden staging folder and
+            moved into place atomically.
+          </p>
+        </div>
+      </div>
+      } @else if (isWriting()) { @if (activeSection(); as active) {
+      <div class="write__manuscript-heading">
+        <div>
+          <p class="ccb-eyebrow">Live draft</p>
+          <h3 id="manuscript-title">{{ active.title }}</h3>
+        </div>
+        <span class="write__word-budget">
+          {{ store.currentLiveWords() }} / ~{{ active.wordBudget }} words
+        </span>
+      </div>
+      <pre
+        #manuscript
+        class="write__live"
+        tabindex="0"
+        aria-label="Live text for the current section"
+      >
+{{ liveText() || 'Waiting for the first words…' }}</pre>
+      } @else {
+      <div class="write__idle" role="status">
+        <h3 id="manuscript-title">Preparing the next section</h3>
+        <p>The next section will appear here.</p>
+      </div>
+      } } @else {
+      <div class="write__idle" role="status">
+        <h3 id="manuscript-title">Between sections</h3>
+        <p>Completed sections are listed beside you. The next section will appear here.</p>
+      </div>
+      }
+    </section>
+
+    <div class="write__sections" aria-labelledby="sections-title">
+      <div class="write__sections-heading">
+        <h3 id="sections-title">Sections</h3>
+        <span>{{ completed() }} / {{ total() }}</span>
+      </div>
+      <ol class="write__section-list">
+        @for (section of sections(); track section.number) {
+        <li
+          class="write__section-item"
+          [class.is-active]="section.number === activeNumber()"
+          [class.is-completed]="section.status === 'completed'"
+          [class.is-failed]="section.status === 'failed'"
+          [attr.aria-current]="section.number === activeNumber() ? 'step' : null"
+        >
+          <div class="write__section-top">
+            <span class="write__section-marker" aria-hidden="true">
+              @if (section.status === 'completed') { ✓ } @else if (section.status === 'failed') { !
+              } @else { {{ section.number }} }
+            </span>
+            <div class="write__section-copy">
+              <h4>{{ section.title }}</h4>
+              <p class="write__section-status">
+                @if (section.status === 'completed') { {{ sectionWords(section).toLocaleString() }}
+                words } @else if (section.status === 'failed') { Paused on this section } @else if
+                (section.status === 'running') { Writing now } @else { Waiting }
+              </p>
+            </div>
+          </div>
+
+          @if (section.status === 'failed' && section.error; as error) {
+          <p class="write__section-error">{{ error.message }}</p>
+          } @if (section.status === 'completed' && section.markdown; as markdown) {
+          <details class="write__section-preview">
+            <summary>View section</summary>
+            <pre tabindex="0">{{ markdown }}</pre>
+          </details>
+          }
+        </li>
+        }
+      </ol>
+    </div>
+  </div>
+
+  <footer class="write__actions">
+    <div class="write__actions-left">
+      <a class="ccb-button ccb-button--ghost" routerLink="/">Library</a>
+      @if (session.outline !== undefined) {
+      <a
+        class="ccb-button ccb-button--ghost"
+        [routerLink]="['/courses/new', session.id, 'outline']"
+      >
+        View outline
+      </a>
+      }
+    </div>
+
+    <div class="write__actions-right">
+      @if (isWriting()) {
+      <button
+        type="button"
+        class="ccb-button ccb-button--secondary"
+        [disabled]="pausing() || busy()"
+        (click)="pause()"
+      >
+        {{ pausing() ? 'Pausing…' : 'Pause after this section' }}
+      </button>
+      <button
+        type="button"
+        class="ccb-button ccb-button--danger"
+        [disabled]="busy()"
+        (click)="stop()"
+      >
+        Stop writing
+      </button>
+      } @if (connection() === 'reconnecting' || connection() === 'closed') {
+      <button type="button" class="ccb-button ccb-button--secondary" (click)="reconnect()">
+        Reconnect
+      </button>
+      }
+    </div>
+  </footer>
+  }
+</section>
+} @else if (store.loadStatus() === 'error') {
+<ccb-session-gate
+  [errorMessage]="store.loadError()?.message ?? 'This session could not be loaded.'"
+  (retry)="retryLoad()"
+/>
+} @else {
+<ccb-session-gate [errorMessage]="null" />
+}

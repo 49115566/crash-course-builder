@@ -17,6 +17,65 @@ describe('loadConfig', () => {
     expect(config.logLevel).toBe('info');
     expect(config.dataDir).toContain('crash-course-builder');
     expect(config.configDir).toContain('crash-course-builder');
+    expect(config.fakeAi).toEqual({ delayMs: 0, chunkSize: 24 });
+    expect(config.disableKeychain).toBe(false);
+  });
+
+  it('parses fake AI test controls', () => {
+    const config = loadConfig({
+      env: {
+        CCB_AI_PROVIDER: 'fake',
+        CCB_FAKE_AI_DELAY_MS: '12',
+        CCB_FAKE_AI_CHUNK_SIZE: '8',
+        CCB_FAKE_AI_FAIL_SCOPE: 'section',
+        CCB_FAKE_AI_FAIL_SECTION: '3',
+        CCB_FAKE_AI_FAIL_AFTER_CHUNKS: '2',
+        CCB_FAKE_AI_FAIL_ONCE: 'true',
+        CCB_FAKE_AI_FAIL_CODE: 'AI_TIMEOUT',
+      },
+      homeDir: '/home/tester',
+      cwd: '/work',
+    });
+
+    expect(config.fakeAi).toEqual({
+      delayMs: 12,
+      chunkSize: 8,
+      failure: {
+        scope: 'section',
+        sectionNumber: 3,
+        afterChunks: 2,
+        code: 'AI_TIMEOUT',
+      },
+      failureOnce: true,
+    });
+  });
+
+  it('allows tests to disable the OS keychain', () => {
+    const config = loadConfig({
+      env: { CCB_DISABLE_KEYCHAIN: 'true' },
+      homeDir: '/home/tester',
+      cwd: '/work',
+    });
+
+    expect(config.disableKeychain).toBe(true);
+  });
+
+  it('rejects invalid fake AI controls', () => {
+    expect(() =>
+      loadConfig({
+        env: { CCB_FAKE_AI_FAIL_SCOPE: 'everything' },
+        homeDir: '/home/tester',
+        cwd: '/work',
+      }),
+    ).toThrow(ConfigError);
+
+    expect(() =>
+      loadConfig({
+        env: { CCB_FAKE_AI_DELAY_MS: '-1' },
+        homeDir: '/home/tester',
+        cwd: '/work',
+      }),
+    ).toThrow(ConfigError);
   });
 
   it('accepts overrides and strips trailing slashes from the base URL', () => {

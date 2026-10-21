@@ -7,13 +7,19 @@ import { DeepSeekProvider } from '../deepseek/deepseek-provider.js';
 import { FakeAiProvider } from '../fake-ai/fake-ai-provider.js';
 
 export function createAiProvider(
-  config: Pick<AppConfig, 'aiProvider' | 'deepseekBaseUrl' | 'model'>,
+  config: Pick<AppConfig, 'aiProvider' | 'deepseekBaseUrl' | 'model' | 'fakeAi'>,
   secrets: SecretStore,
   logger: Logger,
 ): AiProvider {
   if (config.aiProvider === 'fake') {
     logger.warn('Using the deterministic fake AI provider. No network requests will be made.');
-    return new FakeAiProvider();
+    return new FakeAiProvider({
+      delayMs: config.fakeAi.delayMs,
+      chunkSize: config.fakeAi.chunkSize,
+      ...(config.fakeAi.failure === undefined
+        ? {}
+        : { failure: config.fakeAi.failure, failureOnce: config.fakeAi.failureOnce }),
+    });
   }
 
   return new DeepSeekProvider({
