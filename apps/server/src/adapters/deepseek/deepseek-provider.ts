@@ -33,7 +33,7 @@ interface DeepSeekStreamChunk {
     prompt_tokens?: number;
     completion_tokens?: number;
     total_tokens?: number;
-  };
+  } | null;
 }
 
 const STATUS_ERRORS: Record<number, { code: ErrorCode; message: string; retryable: boolean }> = {
@@ -258,7 +258,7 @@ export class DeepSeekProvider implements AiProvider {
 }
 
 function mapUsage(usage: DeepSeekStreamChunk['usage']): AiChunk['usage'] | undefined {
-  if (usage === undefined) {
+  if (usage === undefined || usage === null) {
     return undefined;
   }
 
