@@ -5,9 +5,11 @@ import { pinoHttp } from 'pino-http';
 import type { Logger } from 'pino';
 import { API_PREFIX, HEALTH_PATH, REQUEST_ID_HEADER } from '@ccb/contracts';
 
+import type { LibraryService } from '../app/library-service.js';
 import type { AppConfig } from '../config.js';
 import { NotFoundError, createErrorHandler } from './errors.js';
 import { getRequestId } from './response.js';
+import { createLibraryRouter } from './routes/library.routes.js';
 import { createSystemRouter } from './routes/system.routes.js';
 import { apiNoStore, securityHeaders } from './security.js';
 import { registerStaticRoutes } from './static.js';
@@ -16,9 +18,10 @@ export interface AppDependencies {
   config: AppConfig;
   logger: Logger;
   version: string;
+  libraryService: LibraryService;
 }
 
-export function createApp({ config, logger, version }: AppDependencies): Express {
+export function createApp({ config, logger, version, libraryService }: AppDependencies): Express {
   const app = express();
 
   app.disable('x-powered-by');
@@ -53,7 +56,11 @@ export function createApp({ config, logger, version }: AppDependencies): Express
   app.use(API_PREFIX, apiNoStore);
   app.use(express.json({ limit: '64kb', strict: true }));
 
-  app.use(API_PREFIX, createSystemRouter(version));
+  app.use(
+    API_PREFIX,
+    createSystemRouter(version, () => libraryService.getReadiness()),
+  );
+  app.use(API_PREFIX, createLibraryRouter(libraryService));
 
   app.use(API_PREFIX, (_req, _res, next) => {
     next(new NotFoundError('The API route could not be found.'));

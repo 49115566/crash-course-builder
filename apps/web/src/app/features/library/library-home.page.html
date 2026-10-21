@@ -1,18 +1,161 @@
-<section class="library" aria-labelledby="library-title">
+<section
+  class="library"
+  aria-labelledby="library-title"
+  [attr.aria-busy]="store.status() === 'loading' || store.busy()"
+>
   <header class="library__header">
     <div class="library__heading">
       <p class="ccb-eyebrow">Local course library</p>
       <h1 id="library-title">Your library</h1>
       <p class="ccb-lede">
-        A quiet place for the things you want to learn. Courses will be organized by subject and
-        stored as readable files on this computer.
+        A quiet place for the things you want to learn. Every subject is a folder on this computer,
+        and every course stays readable outside the app.
       </p>
+      <p class="library__summary">{{ summary() }}</p>
     </div>
-    <span ccbBadge tone="accent">Preview</span>
+
+    <div class="library__actions">
+      @if (store.hasContent()) {
+      <div class="library__search">
+        <label class="ccb-visually-hidden" for="library-search">Search courses</label>
+        <span class="library__search-icon" aria-hidden="true"></span>
+        <input
+          id="library-search"
+          type="search"
+          placeholder="Search courses"
+          autocomplete="off"
+          [value]="store.searchQuery()"
+          (input)="onSearch($event)"
+        />
+        @if (store.isSearching()) {
+        <button type="button" class="library__search-clear" (click)="clearSearch()">Clear</button>
+        }
+      </div>
+      }
+
+      <button
+        id="new-subject-button"
+        type="button"
+        ccbButton
+        variant="primary"
+        (click)="startCreate()"
+      >
+        <span aria-hidden="true">+</span>
+        New subject
+      </button>
+    </div>
   </header>
 
+  @if (showCreate()) {
+  <form class="library__create" (submit)="submitCreate($event)">
+    <div class="library__create-heading">
+      <span class="library__create-mark" aria-hidden="true"></span>
+      <div>
+        <h2>Name a new subject</h2>
+        <p>We will create a folder for it in your local library.</p>
+      </div>
+    </div>
+
+    <div class="ccb-field">
+      <label for="new-subject-name">Subject name</label>
+      <input
+        #createInput
+        id="new-subject-name"
+        type="text"
+        autocomplete="off"
+        [formControl]="createName"
+        [attr.aria-invalid]="createName.invalid && createName.touched"
+        [attr.aria-describedby]="createName.invalid && createName.touched ? 'new-subject-error' : null"
+      />
+      @if (createName.invalid && createName.touched) {
+      <p id="new-subject-error" class="ccb-field__error">{{ createError() }}</p>
+      } @else {
+      <p class="ccb-field__hint">Examples: Computer Science, Marketing, Modern History.</p>
+      }
+    </div>
+
+    <div class="library__create-actions">
+      <button type="button" class="ccb-button ccb-button--ghost" (click)="cancelCreate()">
+        Cancel
+      </button>
+      <button
+        type="submit"
+        class="ccb-button ccb-button--primary"
+        [disabled]="creating() || createName.invalid"
+      >
+        {{ creating() ? 'Creating…' : 'Create subject' }}
+      </button>
+    </div>
+  </form>
+  }
+
+  <ccb-library-warnings [warnings]="store.warnings()" (dismiss)="store.dismissWarnings()" />
+
+  @if (store.status() === 'loading' && !store.hasContent()) {
+  <ccb-library-skeleton />
+  } @else if (store.status() === 'error') {
+  <div class="library__error" role="alert">
+    <p class="ccb-eyebrow">Library unavailable</p>
+    <h2>We could not read your shelves</h2>
+    <p>{{ store.error()?.message }}</p>
+    <p class="library__error-help">
+      Check that the library folder exists and is writable, then try again. Your course files are
+      never changed by a failed read.
+    </p>
+    <button type="button" ccbButton variant="secondary" (click)="reload()">Try again</button>
+  </div>
+  } @else if (store.isEmpty() && !showCreate()) {
   <ccb-empty-state
     heading="Your shelf is empty"
-    body="Course creation and library management are coming soon. The foundation is ready and waiting."
-  />
+    body="Start by naming a subject. Courses from the creation wizard will be filed into these folders, ready to read."
+  >
+    <button type="button" ccbButton variant="primary" (click)="startCreate()">
+      Create your first subject
+    </button>
+  </ccb-empty-state>
+  } @else if (store.hasContent() && store.filteredSubjects().length === 0) {
+  <ccb-empty-state
+    heading="No courses match"
+    body="Try a different title, topic, audience, or subject name."
+  >
+    <button type="button" ccbButton variant="secondary" (click)="clearSearch()">
+      Clear search
+    </button>
+  </ccb-empty-state>
+  } @else {
+  <div class="library__list-heading">
+    <p class="library__reorder-hint">
+      Drag subjects to reorder them, or use the subject menu for a keyboard-friendly alternative.
+    </p>
+    @if (store.isSearching()) {
+    <p class="library__search-count" aria-live="polite">
+      {{ store.visibleCourseCount() }} of {{ store.totalCourses() }} courses
+    </p>
+    } @else {
+    <span ccbBadge tone="neutral">{{ store.totalSubjects() }} subjects</span>
+    }
+  </div>
+
+  <div
+    class="library__subjects"
+    cdkDropList
+    [cdkDropListDisabled]="reorderDisabled()"
+    (cdkDropListDropped)="dropSubject($event)"
+  >
+    @for (subject of store.filteredSubjects(); track subject.id; let index = $index, count = $count)
+    {
+    <ccb-subject-section
+      [subject]="subject"
+      [index]="index"
+      [total]="count"
+      [reorderDisabled]="reorderDisabled()"
+      (rename)="renameSubject($event)"
+      (deleteSubject)="deleteSubject($event)"
+      (moveSubject)="moveSubject($event)"
+      (moveCourse)="moveCourse($event)"
+      (deleteCourse)="deleteCourse($event)"
+    />
+    }
+  </div>
+  }
 </section>
