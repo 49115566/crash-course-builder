@@ -1,0 +1,8 @@
+<section class="empty-state">
+  <span class="empty-state__mark" aria-hidden="true"></span>
+  <h2 class="empty-state__title">{{ heading() }}</h2>
+  @if (body(); as body) {
+  <p class="empty-state__body">{{ body }}</p>
+  }
+  <ng-content />
+</section>

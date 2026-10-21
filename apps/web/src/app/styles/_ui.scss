@@ -1,0 +1,119 @@
+.ccb-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ccb-space-1);
+  min-height: 2.55rem;
+  padding: 0.55rem 1rem;
+  border: 1px solid transparent;
+  border-radius: var(--ccb-radius-sm);
+  font-family: var(--ccb-font-ui);
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.2;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background-color var(--ccb-motion-fast) var(--ccb-ease),
+    border-color var(--ccb-motion-fast) var(--ccb-ease),
+    color var(--ccb-motion-fast) var(--ccb-ease),
+    transform var(--ccb-motion-fast) var(--ccb-ease);
+}
+
+.ccb-button:active:not(:disabled, [aria-disabled='true']) {
+  transform: translateY(1px);
+}
+
+.ccb-button:disabled,
+.ccb-button[aria-disabled='true'] {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.ccb-button--sm {
+  min-height: 2.1rem;
+  padding: 0.35rem 0.7rem;
+  font-size: 0.82rem;
+}
+
+.ccb-button--primary {
+  background: var(--ccb-accent);
+  color: #ffffff;
+}
+
+.ccb-button--primary:hover:not(:disabled) {
+  background: var(--ccb-accent-strong);
+  color: #ffffff;
+}
+
+.ccb-button--secondary {
+  border-color: var(--ccb-line-strong);
+  background: var(--ccb-surface-raised);
+  color: var(--ccb-ink);
+}
+
+.ccb-button--secondary:hover:not(:disabled) {
+  border-color: var(--ccb-accent);
+  background: var(--ccb-accent-soft);
+  color: var(--ccb-accent-strong);
+}
+
+.ccb-button--ghost {
+  background: transparent;
+  color: var(--ccb-accent);
+}
+
+.ccb-button--ghost:hover:not(:disabled) {
+  background: var(--ccb-accent-soft);
+  color: var(--ccb-accent-strong);
+}
+
+.ccb-button--danger {
+  background: var(--ccb-danger);
+  color: #ffffff;
+}
+
+.ccb-button--danger:hover:not(:disabled) {
+  background: #7f2424;
+  color: #ffffff;
+}
+
+.ccb-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.18rem 0.5rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-family: var(--ccb-font-ui);
+  font-size: 0.72rem;
+  font-weight: 650;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.ccb-badge--neutral {
+  border-color: var(--ccb-line);
+  background: var(--ccb-surface);
+  color: var(--ccb-ink-muted);
+}
+
+.ccb-badge--accent {
+  background: var(--ccb-accent-soft);
+  color: var(--ccb-accent-strong);
+}
+
+.ccb-badge--success {
+  background: var(--ccb-success-soft);
+  color: var(--ccb-success);
+}
+
+.ccb-badge--warning {
+  background: var(--ccb-warning-soft);
+  color: var(--ccb-warning);
+}
+
+.ccb-badge--danger {
+  background: var(--ccb-danger-soft);
+  color: var(--ccb-danger);
+}

@@ -1,0 +1,34 @@
+:host {
+  display: block;
+}
+
+.library {
+  display: grid;
+  gap: var(--ccb-space-6);
+  width: min(100%, var(--ccb-shell-width));
+  margin: 0 auto;
+}
+
+.library__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--ccb-space-3);
+  padding-top: var(--ccb-space-2);
+}
+
+.library__heading {
+  display: grid;
+  gap: var(--ccb-space-2);
+  max-width: 46rem;
+}
+
+.library__heading h1 {
+  margin: 0;
+}
+
+@media (max-width: 40rem) {
+  .library__header {
+    flex-direction: column;
+  }
+}
