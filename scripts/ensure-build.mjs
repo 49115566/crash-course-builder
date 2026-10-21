@@ -69,6 +69,12 @@ function oldestMtime(target) {
 }
 
 function isStale() {
+  for (const output of buildOutputs) {
+    if (!existsSync(path.join(repoRoot, output))) {
+      return true;
+    }
+  }
+
   const newestInput = Math.max(...buildInputs.map(newestMtime));
   const oldestOutput = Math.min(...buildOutputs.map(oldestMtime));
 
