@@ -2,7 +2,7 @@
 
 ## KI-001: DeepSeek streaming always fails with `AI_NETWORK`
 
-- **Status:** Open
+- **Status:** Resolved (2026-10-21)
 - **Severity:** High — blocks all course generation
 - **Affected area:** DeepSeek adapter (Milestone 3)
 - **Discovered:** 2026-10-21

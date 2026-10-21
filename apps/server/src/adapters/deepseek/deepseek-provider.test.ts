@@ -94,6 +94,34 @@ describe('DeepSeekProvider', () => {
     });
   });
 
+  it('treats null usage on normal chunks as absent', async () => {
+    const fetchImpl = vi.fn(async () =>
+      responseOf([
+        event({
+          choices: [{ delta: { role: 'assistant', content: '' }, finish_reason: null }],
+          usage: null,
+        }),
+        event({ choices: [{ delta: { content: 'Hello ' } }], usage: null }),
+        event({ choices: [{ delta: { content: 'world' }, finish_reason: 'stop' }], usage: null }),
+        'data: [DONE]\n\n',
+      ]),
+    );
+    const provider = new DeepSeekProvider({
+      baseUrl: 'https://example.test',
+      model: 'deepseek-chat',
+      getApiKey: async () => 'secret',
+      fetchImpl,
+    });
+
+    const chunks = await collect(
+      provider.streamOutline({ prompt: PROMPT }, new AbortController().signal),
+    );
+
+    expect(chunks.map((chunk) => chunk.text).join('')).toBe('Hello world');
+    expect(chunks.at(-1)?.finishReason).toBe('stop');
+    expect(chunks.every((chunk) => chunk.usage === undefined)).toBe(true);
+  });
+
   it('maps HTTP failures without retrying', async () => {
     const cases = [
       [401, 'AI_AUTH_INVALID'],
