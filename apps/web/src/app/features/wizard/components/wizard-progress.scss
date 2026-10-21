@@ -1,0 +1,80 @@
+:host {
+  display: block;
+}
+
+.wizard-progress ol {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.wizard-progress__step {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 0.4rem;
+  color: var(--ccb-ink-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.wizard-progress__step:not(:last-child)::after {
+  position: absolute;
+  top: 0.75rem;
+  left: calc(50% + 1rem);
+  right: calc(-50% + 1rem);
+  height: 1px;
+  background: var(--ccb-line);
+  content: '';
+}
+
+.wizard-progress__step.is-complete:not(:last-child)::after {
+  background: color-mix(in srgb, var(--ccb-accent) 45%, var(--ccb-line));
+}
+
+.wizard-progress__marker {
+  display: grid;
+  z-index: 1;
+  place-items: center;
+  width: 1.55rem;
+  height: 1.55rem;
+  border: 1px solid var(--ccb-line-strong);
+  border-radius: 999px;
+  background: var(--ccb-surface);
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.wizard-progress__step.is-current .wizard-progress__marker {
+  border-color: var(--ccb-accent);
+  background: var(--ccb-accent);
+  color: #ffffff;
+}
+
+.wizard-progress__step.is-complete .wizard-progress__marker {
+  border-color: var(--ccb-accent);
+  color: var(--ccb-accent);
+}
+
+.wizard-progress__step.is-complete.is-current .wizard-progress__marker {
+  color: #ffffff;
+}
+
+.wizard-progress__check {
+  font-size: 0.75rem;
+  line-height: 1;
+}
+
+.wizard-progress__step.is-current .wizard-progress__label {
+  color: var(--ccb-ink);
+}
+
+@media (max-width: 34rem) {
+  .wizard-progress__label {
+    font-size: 0.68rem;
+  }
+}

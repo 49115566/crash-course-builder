@@ -1,0 +1,108 @@
+:host {
+  display: block;
+}
+
+.key-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--ccb-space-2);
+  width: min(100%, var(--ccb-shell-width));
+  margin: var(--ccb-space-1) auto 0;
+  padding: 0.7rem var(--ccb-space-2);
+  border: 1px solid color-mix(in srgb, var(--ccb-warning) 40%, var(--ccb-line));
+  border-radius: var(--ccb-radius-md);
+  background: var(--ccb-warning-soft);
+}
+
+.key-banner__mark {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 999px;
+  background: var(--ccb-warning);
+  color: #ffffff;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.key-banner__body {
+  display: grid;
+  gap: 0.12rem;
+  min-width: 0;
+}
+
+.key-banner__title {
+  margin: 0;
+  color: var(--ccb-ink);
+  font-size: 0.85rem;
+  font-weight: 650;
+}
+
+.key-banner__text {
+  margin: 0;
+  color: var(--ccb-ink-muted);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.key-banner__text code {
+  padding: 0.08rem 0.28rem;
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--ccb-surface) 70%, transparent);
+  font-family: var(--ccb-font-mono);
+  font-size: 0.74rem;
+}
+
+.key-banner__actions {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 0.3rem;
+  margin-left: auto;
+}
+
+.key-banner__button {
+  padding: 0.35rem 0.55rem;
+  border: 1px solid var(--ccb-line-strong);
+  border-radius: 7px;
+  background: var(--ccb-surface);
+  color: var(--ccb-ink);
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.key-banner__button:hover:not(:disabled) {
+  border-color: var(--ccb-accent);
+  color: var(--ccb-accent-strong);
+}
+
+.key-banner__button--primary {
+  border-color: var(--ccb-accent);
+  background: var(--ccb-accent);
+  color: #ffffff;
+}
+
+.key-banner__button--primary:hover:not(:disabled) {
+  background: var(--ccb-accent-strong);
+  color: #ffffff;
+}
+
+.key-banner__button:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+@media (max-width: 48rem) {
+  .key-banner {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .key-banner__actions {
+    width: 100%;
+    margin-left: calc(1.5rem + var(--ccb-space-2));
+  }
+}

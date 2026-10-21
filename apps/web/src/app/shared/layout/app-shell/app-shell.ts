@@ -4,19 +4,26 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { startWith } from 'rxjs';
 
 import { HealthService } from '../../../core/api/health.service';
+import { BootstrapStore } from '../../../core/bootstrap/bootstrap.store';
+import { KeyBanner } from '../key-banner/key-banner';
 import { ToastOutlet } from '../../ui/toast/toast-outlet';
 
 const LOADING_HEALTH = { state: 'loading' } as const;
 
 @Component({
   selector: 'ccb-app-shell',
-  imports: [RouterLink, RouterLinkActive, RouterOutlet, ToastOutlet],
+  imports: [KeyBanner, RouterLink, RouterLinkActive, RouterOutlet, ToastOutlet],
   templateUrl: './app-shell.html',
   styleUrl: './app-shell.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AppShell {
   private readonly healthService = inject(HealthService);
+  private readonly bootstrap = inject(BootstrapStore);
+
+  constructor() {
+    void this.bootstrap.load();
+  }
 
   protected readonly health = toSignal(
     this.healthService.getHealth().pipe(startWith(LOADING_HEALTH)),

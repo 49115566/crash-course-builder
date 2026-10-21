@@ -124,3 +124,13 @@ Events are named:
 Deltas are coalesced to roughly 50 ms batches. Heartbeats are sent every 15 seconds. AI calls are
 never retried by the transport; reconnecting only re-synchronizes state. Multiple tabs may watch the
 same session.
+
+## Wizard client behavior
+
+The Angular wizard opens the SSE stream after loading a session. It treats each `snapshot` as
+authoritative, applies semantic events immediately, and performs a short debounced session refresh
+after them. Token deltas are coalesced again in the browser for rendering. Transport reconnects never
+restart AI work.
+
+`/courses/new/:sessionId/edit` is a client route for editing a draft or outline-review session.
+`/courses/new/:sessionId` is a client redirect route that picks the correct step from status/stage.

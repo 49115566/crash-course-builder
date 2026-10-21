@@ -50,6 +50,30 @@ Finalization failure marks the session failed at stage `finalization`. Resume in
 library finalizer only — no AI provider calls are made. Completed section Markdown remains in the
 snapshot.
 
+## Wizard and SSE reconciliation
+
+The Angular wizard is a lazy-loaded route family under `/courses/new`. The parent layout provides one
+`SessionWizardStore` for the whole flow, so moving between steps keeps the live event stream and
+avoids duplicate session loads.
+
+- `/courses/new/:sessionId/edit` exists so input editing stays refreshable.
+- `/courses/new/:sessionId` is a redirect route that chooses the correct step from status and stage.
+- A read-only outline view remains reachable after writing starts, so the disabled-regeneration
+  explanation is visible without exposing an action the server would reject.
+- The reader route and “Read course” action are intentionally deferred to Milestone 5.
+
+SSE handling has two layers:
+
+1. Named events update the local signals immediately for a responsive live view.
+2. A short coalesced refresh reconciles the authoritative session snapshot after semantic events.
+   Stale responses are ignored with a request sequence token, and live text for the currently running
+   section is preserved across those refreshes and transport reconnects. A fresh snapshot after a
+   stage change resets the live buffers.
+
+Token deltas are buffered client-side for roughly 50 ms in addition to the server's 50 ms
+coalescing. This keeps rendering and screen-reader activity calm. Section boundaries and completion
+are announced via `LiveAnnouncer`; individual tokens are not.
+
 ## Provider
 
 `DeepSeekProvider` uses native `fetch` against an OpenAI-compatible `/chat/completions` endpoint and
@@ -89,3 +113,5 @@ connection from blocking shutdown.
 - Additional AI providers implement the `AiProvider` port and are selected in the composition root.
 - Phase 2 conversations can live under a future `conversations/` library extension without changing
   course snapshots or the reader.
+- The wizard's step mapping and stream client are reusable for any future AI workflow that persists
+  session snapshots.

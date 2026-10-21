@@ -4,7 +4,10 @@ import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const e2eRoot = path.join(repoRoot, '.tmp', 'e2e');
+const name = process.env['CCB_E2E_NAME'] ?? 'main';
+const port = process.env['CCB_E2E_PORT'] ?? '4310';
+const withKey = process.env['CCB_E2E_WITH_KEY'] !== '0';
+const e2eRoot = path.join(repoRoot, '.tmp', 'e2e', name);
 const libraryRoot = path.join(e2eRoot, 'library');
 const dataDir = path.join(e2eRoot, 'data');
 const configDir = path.join(e2eRoot, 'config');
@@ -26,13 +29,14 @@ const child = spawn(process.execPath, [serverEntry], {
   env: {
     ...process.env,
     NODE_ENV: 'production',
-    CCB_PORT: '4310',
+    CCB_PORT: port,
     CCB_LIBRARY_ROOT: libraryRoot,
     CCB_DATA_DIR: dataDir,
     CCB_CONFIG_DIR: configDir,
     CCB_LOG_LEVEL: 'warn',
-    DEEPSEEK_API_KEY: 'e2e-local-test-key',
     CCB_AI_PROVIDER: 'fake',
+    CCB_DISABLE_KEYCHAIN: 'true',
+    ...(withKey ? { DEEPSEEK_API_KEY: 'e2e-local-test-key' } : { DEEPSEEK_API_KEY: '' }),
   },
 });
 

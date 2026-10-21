@@ -2,6 +2,7 @@ import { Dialog, DialogModule } from '@angular/cdk/dialog';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideZonelessChangeDetection } from '@angular/core';
+import { provideRouter } from '@angular/router';
 import { TestBed } from '@angular/core/testing';
 import type { ApiSuccess, LibraryData, SubjectSummary } from '@ccb/contracts';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -40,6 +41,7 @@ describe('LibraryHomePage', () => {
       imports: [LibraryHomePage, DialogModule],
       providers: [
         provideZonelessChangeDetection(),
+        provideRouter([]),
         provideHttpClient(),
         provideHttpClientTesting(),
       ],
@@ -55,7 +57,15 @@ describe('LibraryHomePage', () => {
     TestBed.resetTestingModule();
   });
 
+  function flushSessions(sessions: unknown[] = []): void {
+    const request = http.match('/api/sessions?active=true');
+    for (const entry of request) {
+      entry.flush({ data: { sessions }, requestId: 'sessions-1' });
+    }
+  }
+
   async function flushLibrary(data: LibraryData): Promise<void> {
+    flushSessions();
     const request = http.expectOne('/api/library');
     request.flush({ data, requestId: 'request-1' } satisfies ApiSuccess<LibraryData>);
     await fixture.whenStable();
@@ -167,6 +177,7 @@ describe('LibraryHomePage', () => {
   });
 
   it('shows scan warnings and allows dismissing them', async () => {
+    flushSessions();
     const request = http.expectOne('/api/library');
     request.flush({
       data: POPULATED,
@@ -185,6 +196,7 @@ describe('LibraryHomePage', () => {
   });
 
   it('renders a retryable error state', async () => {
+    flushSessions();
     http.expectOne('/api/library').flush(
       {
         error: {

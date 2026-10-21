@@ -5,6 +5,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   type ElementRef,
+  HostListener,
   type Type,
   computed,
   inject,
@@ -12,7 +13,8 @@ import {
   viewChild,
 } from '@angular/core';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
-import type { CourseSummary, SubjectSummary } from '@ccb/contracts';
+import type { CourseSummary, SessionSummary, SubjectSummary } from '@ccb/contracts';
+import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 
 import { BadgeDirective } from '../../shared/ui/badge/badge.directive';
@@ -20,9 +22,14 @@ import { ButtonDirective } from '../../shared/ui/button/button.directive';
 import { EmptyState } from '../../shared/ui/empty-state/empty-state';
 import { LibraryWarnings } from './components/library-warnings';
 import { LibrarySkeleton } from './components/library-skeleton';
+import { InProgressStrip } from './components/in-progress-strip';
 import { SubjectSection, type SubjectMoveDirection } from './components/subject-section';
 import { DeleteCourseDialog, type DeleteCourseDialogData } from './dialogs/delete-course.dialog';
 import { DeleteSubjectDialog, type DeleteSubjectDialogData } from './dialogs/delete-subject.dialog';
+import {
+  DiscardSessionDialog,
+  type DiscardSessionDialogData,
+} from './dialogs/discard-session.dialog';
 import {
   MoveCourseDialog,
   type MoveCourseDialogData,
@@ -30,6 +37,7 @@ import {
 } from './dialogs/move-course.dialog';
 import { RenameSubjectDialog, type RenameSubjectDialogData } from './dialogs/rename-subject.dialog';
 import { libraryNameValidator } from './library-name.validator';
+import { ActiveSessionsStore } from './active-sessions.store';
 import { LibraryStore } from './library.store';
 
 @Component({
@@ -39,20 +47,23 @@ import { LibraryStore } from './library.store';
     ButtonDirective,
     DragDropModule,
     EmptyState,
+    InProgressStrip,
     LibrarySkeleton,
     LibraryWarnings,
     ReactiveFormsModule,
+    RouterLink,
     SubjectSection,
   ],
   templateUrl: './library-home.page.html',
   styleUrl: './library-home.page.scss',
-  providers: [LibraryStore],
+  providers: [ActiveSessionsStore, LibraryStore],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class LibraryHomePage {
   private readonly dialog = inject(Dialog);
   private readonly announcer = inject(LiveAnnouncer);
   protected readonly store = inject(LibraryStore);
+  protected readonly sessions = inject(ActiveSessionsStore);
   private readonly createInput = viewChild<ElementRef<HTMLInputElement>>('createInput');
 
   protected readonly showCreate = signal(false);
@@ -77,6 +88,14 @@ export class LibraryHomePage {
 
   constructor() {
     void this.store.load();
+    void this.sessions.load();
+  }
+
+  @HostListener('window:focus')
+  protected onWindowFocus(): void {
+    if (document.visibilityState === 'visible') {
+      void this.sessions.load({ silent: true });
+    }
   }
 
   protected onSearch(event: Event): void {
@@ -177,6 +196,18 @@ export class LibraryHomePage {
     }
 
     await this.store.moveCourseToNewSubject(course.id, result.name);
+  }
+
+  protected async discardSession(session: SessionSummary): Promise<void> {
+    const confirmed = await this.openDialog<boolean, DiscardSessionDialogData>(
+      DiscardSessionDialog,
+      { session },
+      `Discard ${session.title ?? session.topic}`,
+    );
+
+    if (confirmed === true) {
+      await this.sessions.discard(session.id);
+    }
   }
 
   protected async deleteCourse(course: CourseSummary): Promise<void> {

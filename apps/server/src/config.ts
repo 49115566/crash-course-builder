@@ -8,6 +8,13 @@ import { z } from 'zod';
 const LOG_LEVELS = ['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'] as const;
 const NODE_ENVS = ['development', 'test', 'production'] as const;
 const AI_PROVIDERS = ['deepseek', 'fake'] as const;
+const FAKE_AI_FAILURE_SCOPES = ['outline', 'section'] as const;
+const FAKE_AI_FAILURE_CODES = [
+  'AI_UPSTREAM',
+  'AI_TIMEOUT',
+  'AI_RATE_LIMITED',
+  'AI_NETWORK',
+] as const;
 
 const envSchema = z.object({
   NODE_ENV: z.enum(NODE_ENVS).default('development'),
@@ -23,11 +30,39 @@ const envSchema = z.object({
     .transform((value) => value.replace(/\/+$/, '')),
   CCB_LOG_LEVEL: z.enum(LOG_LEVELS).default('info'),
   CCB_WEB_DIST: z.string().trim().min(1).optional(),
+  CCB_FAKE_AI_DELAY_MS: z.coerce.number().int().min(0).default(0),
+  CCB_FAKE_AI_CHUNK_SIZE: z.coerce.number().int().min(1).max(10_000).default(24),
+  CCB_FAKE_AI_FAIL_SCOPE: z.enum(FAKE_AI_FAILURE_SCOPES).optional(),
+  CCB_FAKE_AI_FAIL_SECTION: z.coerce.number().int().min(1).max(15).optional(),
+  CCB_FAKE_AI_FAIL_AFTER_CHUNKS: z.coerce.number().int().min(0).default(0),
+  CCB_FAKE_AI_FAIL_ONCE: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform((value) => value === 'true'),
+  CCB_FAKE_AI_FAIL_CODE: z.enum(FAKE_AI_FAILURE_CODES).default('AI_UPSTREAM'),
+  CCB_DISABLE_KEYCHAIN: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform((value) => value === 'true'),
 });
 
 export type NodeEnvironment = (typeof NODE_ENVS)[number];
 export type LogLevel = (typeof LOG_LEVELS)[number];
 export type AiProviderKind = (typeof AI_PROVIDERS)[number];
+
+export interface FakeAiFailureSettings {
+  scope: 'outline' | 'section';
+  sectionNumber?: number;
+  afterChunks: number;
+  code: (typeof FAKE_AI_FAILURE_CODES)[number];
+}
+
+export interface FakeAiSettings {
+  delayMs: number;
+  chunkSize: number;
+  failure?: FakeAiFailureSettings;
+  failureOnce?: boolean;
+}
 
 export interface AppConfig {
   nodeEnv: NodeEnvironment;
@@ -40,6 +75,8 @@ export interface AppConfig {
   deepseekBaseUrl: string;
   logLevel: LogLevel;
   webDistDir: string;
+  fakeAi: FakeAiSettings;
+  disableKeychain: boolean;
 }
 
 export interface LoadConfigOptions {
@@ -81,6 +118,17 @@ export function loadConfig(options: LoadConfigOptions = {}): AppConfig {
 
   const values = parsed.data;
   const paths = envPaths(APP_DIR_NAME, { suffix: '' });
+  const failure =
+    values.CCB_FAKE_AI_FAIL_SCOPE === undefined
+      ? undefined
+      : {
+          scope: values.CCB_FAKE_AI_FAIL_SCOPE,
+          ...(values.CCB_FAKE_AI_FAIL_SECTION === undefined
+            ? {}
+            : { sectionNumber: values.CCB_FAKE_AI_FAIL_SECTION }),
+          afterChunks: values.CCB_FAKE_AI_FAIL_AFTER_CHUNKS,
+          code: values.CCB_FAKE_AI_FAIL_CODE,
+        };
 
   return {
     nodeEnv: values.NODE_ENV,
@@ -93,6 +141,12 @@ export function loadConfig(options: LoadConfigOptions = {}): AppConfig {
     deepseekBaseUrl: values.CCB_DEEPSEEK_BASE_URL,
     logLevel: values.CCB_LOG_LEVEL,
     webDistDir: resolvePath(values.CCB_WEB_DIST ?? defaultWebDistDir, homeDir, cwd),
+    fakeAi: {
+      delayMs: values.CCB_FAKE_AI_DELAY_MS,
+      chunkSize: values.CCB_FAKE_AI_CHUNK_SIZE,
+      ...(failure === undefined ? {} : { failure, failureOnce: values.CCB_FAKE_AI_FAIL_ONCE }),
+    },
+    disableKeychain: values.CCB_DISABLE_KEYCHAIN,
   };
 }
 

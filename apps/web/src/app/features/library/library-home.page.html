@@ -33,20 +33,32 @@
       </div>
       }
 
+      <a class="ccb-button ccb-button--primary" routerLink="/courses/new">
+        <span aria-hidden="true">+</span>
+        New course
+      </a>
       <button
         id="new-subject-button"
         type="button"
         ccbButton
-        variant="primary"
+        variant="secondary"
         (click)="startCreate()"
       >
-        <span aria-hidden="true">+</span>
         New subject
       </button>
     </div>
   </header>
 
-  @if (showCreate()) {
+  @if (sessions.hasSessions() || sessions.status() === 'loading' || sessions.status() === 'error') {
+  <ccb-in-progress-strip
+    [sessions]="sessions.sessions()"
+    [loading]="sessions.status() === 'loading'"
+    [errorMessage]="sessions.status() === 'error' ? sessions.error()?.message ?? null : null"
+    [discarding]="sessions.discardingSessionId()"
+    (retry)="sessions.load()"
+    (discard)="discardSession($event)"
+  />
+  } @if (showCreate()) {
   <form class="library__create" (submit)="submitCreate($event)">
     <div class="library__create-heading">
       <span class="library__create-mark" aria-hidden="true"></span>

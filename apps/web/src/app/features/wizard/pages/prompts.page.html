@@ -1,0 +1,147 @@
+@if (session(); as session) {
+<section class="prompts" aria-labelledby="prompts-title">
+  <header class="prompts__header">
+    <p class="ccb-eyebrow">Step 2 · Exact prompt</p>
+    <h2 id="prompts-title" ccbWizardHeading>Check the brief before anything is sent</h2>
+    <p class="ccb-lede">
+      This is the exact starting prompt for “{{ session.input.topic }}”. Review the context, then
+      generate the outline.
+    </p>
+    <div class="prompts__facts" aria-label="Prompt details">
+      <span>{{ session.subject.name }}</span>
+      <span>{{ tokenLabel() }}</span>
+      <span>Prompt v{{ session.startingPrompt.version }}</span>
+    </div>
+  </header>
+
+  <div class="prompts__callout" role="note">
+    <span class="prompts__callout-mark" aria-hidden="true">✓</span>
+    <div>
+      <p class="prompts__callout-title">No AI call has happened yet</p>
+      <p>
+        Nothing leaves this computer until you choose “Generate outline”. The preview below is
+        rendered directly from the saved session.
+      </p>
+    </div>
+  </div>
+
+  <section class="prompts__prior" aria-labelledby="prior-title">
+    <div class="prompts__section-heading">
+      <h3 id="prior-title">Prior courses in this subject</h3>
+      <span class="prompts__count">{{ session.priorCourses.length }}</span>
+    </div>
+    @if (session.priorCourses.length > 0) {
+    <p class="prompts__prior-note">
+      The outline prompt sees only these topics and audiences. It is told to build on them and avoid
+      re-teaching the same material.
+    </p>
+    <ul class="prompts__chips" aria-label="Prior courses">
+      @for (course of session.priorCourses; track $index) {
+      <li class="prompts__chip">
+        <span class="prompts__chip-topic">{{ course.topic }}</span>
+        <span class="prompts__chip-audience">{{ course.audience }}</span>
+      </li>
+      }
+    </ul>
+    } @else {
+    <p class="prompts__prior-note">
+      This is the first course in {{ session.subject.name }}. No prior-course context will be sent.
+    </p>
+    }
+  </section>
+
+  <section class="prompts__messages" aria-labelledby="messages-title">
+    <div class="prompts__section-heading">
+      <h3 id="messages-title">Messages</h3>
+      <span class="prompts__count">2</span>
+    </div>
+
+    <div class="prompts__tabs" role="tablist" aria-label="Prompt messages">
+      <button
+        type="button"
+        role="tab"
+        id="prompt-tab-user"
+        aria-controls="prompt-panel-user"
+        [attr.aria-selected]="tab() === 'user'"
+        [class.is-active]="tab() === 'user'"
+        (click)="selectTab('user')"
+      >
+        User message
+      </button>
+      <button
+        type="button"
+        role="tab"
+        id="prompt-tab-system"
+        aria-controls="prompt-panel-system"
+        [attr.aria-selected]="tab() === 'system'"
+        [class.is-active]="tab() === 'system'"
+        (click)="selectTab('system')"
+      >
+        System message
+      </button>
+    </div>
+
+    @if (tab() === 'user') {
+    <div
+      id="prompt-panel-user"
+      class="prompts__panel"
+      role="tabpanel"
+      aria-labelledby="prompt-tab-user"
+    >
+      <div class="prompts__panel-heading">
+        <span class="prompts__panel-label">User</span>
+        <button type="button" class="prompts__copy" (click)="copyPrompt('user')">
+          {{ copied() === 'user' ? 'Copied' : 'Copy' }}
+        </button>
+      </div>
+      <pre tabindex="0" aria-label="Exact user message">{{ session.startingPrompt.user }}</pre>
+    </div>
+    } @else {
+    <div
+      id="prompt-panel-system"
+      class="prompts__panel"
+      role="tabpanel"
+      aria-labelledby="prompt-tab-system"
+    >
+      <div class="prompts__panel-heading">
+        <span class="prompts__panel-label">System</span>
+        <button type="button" class="prompts__copy" (click)="copyPrompt('system')">
+          {{ copied() === 'system' ? 'Copied' : 'Copy' }}
+        </button>
+      </div>
+      <pre tabindex="0" aria-label="Exact system message">{{ session.startingPrompt.system }}</pre>
+    </div>
+    }
+  </section>
+
+  <ccb-key-required-notice [visible]="keyMissing()" />
+  <ccb-action-error-notice [error]="error()" (dismiss)="dismissError()" />
+
+  <footer class="prompts__actions">
+    <a class="ccb-button ccb-button--ghost" [routerLink]="['/courses/new', session.id, 'edit']">
+      Edit inputs
+    </a>
+    <button
+      type="button"
+      class="ccb-button ccb-button--primary"
+      [disabled]="generating() || keyMissing()"
+      (click)="generate()"
+    >
+      @if (generating()) {
+      <ccb-spinner />
+      <span>Starting outline…</span>
+      } @else {
+      <span>Generate outline</span>
+      <span aria-hidden="true">→</span>
+      }
+    </button>
+  </footer>
+</section>
+} @else if (store.loadStatus() === 'error') {
+<ccb-session-gate
+  [errorMessage]="store.loadError()?.message ?? 'This session could not be loaded.'"
+  (retry)="retryLoad()"
+/>
+} @else {
+<ccb-session-gate [errorMessage]="null" />
+}

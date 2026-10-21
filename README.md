@@ -6,8 +6,8 @@ computer.
 
 ## Current status
 
-Milestones 1 (Library), 2 (Prompt and outline domain), and 3 (DeepSeek, sessions, streaming) are
-implemented.
+Milestones 1 (Library), 2 (Prompt and outline domain), 3 (DeepSeek, sessions, streaming), and 4
+(Wizard UX) are implemented.
 
 Milestone 1:
 
@@ -48,8 +48,23 @@ Milestone 3:
   `CCB_AI_PROVIDER=fake` runs the deterministic test provider without contacting the network when a
   non-empty test key is present.
 
-The wizard and reader screens arrive in later milestones. The library remains fully usable without
-an AI key.
+Milestone 4:
+
+- Refresh-safe wizard routes for details, exact prompt preview, outline review, and live writing,
+  with guards that resume a session at the correct step.
+- A searchable subject combobox with inline subject creation, validated inputs, and a 7-day draft
+  lifecycle surfaced in the library.
+- Server-rendered starting and continuation prompt previews, including prior-course chips, token
+  estimates, and the exact-message guarantee before any AI call.
+- Live SSE streaming with authoritative snapshot reconciliation, reconnects, buffered token updates,
+  section progress, pause/stop controls, and manual resume.
+- Failure presented as “Paused — needs attention”, global `GENERATION_BUSY` guidance, a persistent
+  missing-key banner, and an in-progress library strip with discard actions.
+- Wizard, realtime, API, and accessibility tests plus isolated Playwright servers for happy path,
+  failure/resume, keyless, and global-busy scenarios.
+
+The reader screen arrives in Milestone 5. The library and wizard remain fully usable without an AI
+key, although generation is disabled until a key is configured.
 
 ## Prerequisites
 
@@ -109,6 +124,24 @@ npm start
 ```
 
 Open <http://127.0.0.1:4310>. The Node process serves both the built Angular app and the API.
+
+## Course wizard
+
+Open **New course** from the library, or go directly to `/courses/new`.
+
+1. **Details** — choose a subject (or create one inline), then give the course a topic, audience, and
+   optional instructions.
+2. **Prompt preview** — review the exact system and user messages, prior-course context, and token
+   estimate. No AI call has happened yet.
+3. **Outline review** — inspect the cover, numbered sections, and the exact continuation prompt for
+   every section, then approve. Regeneration is available only before writing starts.
+4. **Writing** — watch live section progress, pause after the current section, stop immediately, or
+   leave the page. Generation continues locally and can be resumed from the library.
+
+Failed calls are shown as **Paused — needs attention** and never retry automatically. If another
+course is being generated, the second session stays a draft and the UI links to the active course.
+Closing the app during generation turns the session into a paused/interrupted session on restart.
+Discarding a session never deletes a course that has already been saved.
 
 ## Sessions
 
@@ -182,7 +215,8 @@ npm run e2e:install
 npm run e2e
 ```
 
-The e2e server uses `.tmp/e2e/`, never your real library.
+The e2e command starts isolated library/data/config roots under `.tmp/e2e/` for the library, wizard,
+failure, and keyless scenarios. It never touches your real library.
 
 ## Configuration
 
@@ -200,6 +234,22 @@ Configuration is read from environment variables. No `.env` file is loaded autom
 | `CCB_LOG_LEVEL`         | `info`                        | `fatal`, `error`, `warn`, `info`, `debug`, `trace`, or `silent` |
 | `CCB_WEB_DIST`          | `apps/web/dist/web/browser`   | Optional web build override                                     |
 | `DEEPSEEK_API_KEY`      | unset                         | Highest-precedence API key source                               |
+
+The following variables are only used by the deterministic fake provider. They exist for automated
+tests and local demos; the DeepSeek provider ignores them.
+
+| Variable                        | Purpose                                                         |
+| ------------------------------- | --------------------------------------------------------------- |
+| `CCB_FAKE_AI_DELAY_MS`          | Delay between streamed chunks                                   |
+| `CCB_FAKE_AI_CHUNK_SIZE`        | Characters per streamed chunk                                   |
+| `CCB_FAKE_AI_FAIL_SCOPE`        | `outline` or `section`                                          |
+| `CCB_FAKE_AI_FAIL_SECTION`      | Section number to fail                                          |
+| `CCB_FAKE_AI_FAIL_AFTER_CHUNKS` | Chunks to emit before failing                                   |
+| `CCB_FAKE_AI_FAIL_ONCE`         | `true` to consume the failure after one use                     |
+| `CCB_FAKE_AI_FAIL_CODE`         | `AI_UPSTREAM`, `AI_TIMEOUT`, `AI_RATE_LIMITED`, or `AI_NETWORK` |
+
+Tests can also set `CCB_DISABLE_KEYCHAIN=true` to keep key resolution away from the developer's OS
+keychain. This is used by the isolated Playwright servers so keyless tests are deterministic.
 
 ## Project layout
 
@@ -240,5 +290,7 @@ The build order is contracts → web → server. Angular and Node consume the bu
   run `npm run key:set`. `npm run doctor` checks the key source, directories, and port.
 - **A repair warning appears:** the folder tree changed outside the app, or metadata was corrupt.
   Review the warning details; course files are not deleted automatically.
+- **Generation is disabled with a key banner:** run `npm run key:set`, then use **Recheck** in the
+  banner (or reload the page). The key itself is never displayed.
 - **Playwright cannot find Chromium:** run `npm run e2e:install`.
 - **Angular dev server shows an API error:** confirm the server is listening on port 4310.
