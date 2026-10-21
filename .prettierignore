@@ -1,0 +1,9 @@
+node_modules/
+**/dist/
+**/.angular/
+**/coverage/
+playwright-report/
+test-results/
+package-lock.json
+phase-1-implementation-plan.md
+project-description.md

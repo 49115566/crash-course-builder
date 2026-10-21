@@ -1,0 +1,42 @@
+<a class="ccb-skip-link" href="#main-content">Skip to content</a>
+
+<header class="site-header">
+  <div class="site-header__inner">
+    <a class="brand" routerLink="/" aria-label="Crash Course Builder home">
+      <span class="brand__mark" aria-hidden="true"></span>
+      <span class="brand__name">Crash Course Builder</span>
+    </a>
+
+    <nav class="site-nav" aria-label="Primary">
+      <a routerLink="/" routerLinkActive="is-active" [routerLinkActiveOptions]="{ exact: true }">
+        Library
+      </a>
+    </nav>
+  </div>
+</header>
+
+<main id="main-content" class="site-main" tabindex="-1">
+  <router-outlet />
+</main>
+
+<footer class="site-footer">
+  <div class="site-footer__inner">
+    <p class="site-footer__note">Local-first. Your courses stay on this computer.</p>
+
+    <p
+      class="service-status"
+      role="status"
+      aria-live="polite"
+      [class.service-status--connected]="health().state === 'connected'"
+      [class.service-status--unavailable]="health().state === 'unavailable'"
+    >
+      <span class="service-status__dot" aria-hidden="true"></span>
+      <span>{{ serviceLabel() }}</span>
+      @if (version(); as version) {
+      <span class="service-status__version">v{{ version }}</span>
+      } @if (health().state === 'unavailable') {
+      <span class="service-status__hint">Start it with npm run dev</span>
+      }
+    </p>
+  </div>
+</footer>
