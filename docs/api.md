@@ -37,8 +37,25 @@ Every response carries `x-request-id`. API responses are `no-store`.
 | PATCH  | `/api/subjects/:id`     | Rename a subject and repair course metadata.                                                                               |
 | PUT    | `/api/subjects/order`   | Persist the full subject order.                                                                                            |
 | DELETE | `/api/subjects/:id`     | Delete an empty subject, or cascade with typed confirmation.                                                               |
+| GET    | `/api/courses/:id`      | Read a saved course: metadata, `outline.md`, and `course.md` exactly as stored.                                            |
 | POST   | `/api/courses/:id/move` | Move a course to another subject.                                                                                          |
 | DELETE | `/api/courses/:id`      | Delete a course after explicit confirmation.                                                                               |
+
+`GET /api/courses/:id` returns:
+
+```json
+{
+  "data": {
+    "meta": {},
+    "outlineMarkdown": "# …",
+    "courseMarkdown": "# …"
+  },
+  "requestId": "…"
+}
+```
+
+A course whose `course.md` or `outline.md` is missing returns `404 NOT_FOUND` with
+`details.files`. Symlinked course files are rejected. The reader never writes to the library.
 
 Library behavior and scan reconciliation are documented in the README.
 

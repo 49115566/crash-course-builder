@@ -90,6 +90,13 @@ test.describe.serial('course creation wizard', () => {
     const successAxe = await new AxeBuilder({ page }).analyze();
     expect(successAxe.violations).toEqual([]);
 
+    await page.getByRole('link', { name: 'Read course' }).click();
+    await expect(
+      page.getByRole('heading', { name: 'Vector Databases: A 30-Minute Crash Course', level: 1 }),
+    ).toBeVisible();
+    await expect(page.locator('.reader-body h2').first()).toContainText('Foundations');
+    await expect(page.getByRole('heading', { name: 'What you will learn' })).toBeVisible();
+
     await page.getByRole('link', { name: 'Back to library' }).click();
     await expect(
       page.getByRole('heading', { name: 'Vector Databases: A 30-Minute Crash Course' }),

@@ -86,6 +86,15 @@ export function createLibraryRouter(service: LibraryService): Router {
     }),
   );
 
+  router.get(
+    '/courses/:id',
+    asyncHandler(async (request, response) => {
+      const courseId = parseCourseId(request);
+      const course = await service.getCourse(courseId);
+      sendSuccess(response, course, getRequestId(response));
+    }),
+  );
+
   router.post(
     '/courses/:id/move',
     asyncHandler(async (request, response) => {

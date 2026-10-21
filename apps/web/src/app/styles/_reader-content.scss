@@ -1,0 +1,300 @@
+.reader-cover markdown,
+.reader-body markdown {
+  display: block;
+  color: var(--ccb-ink);
+  font-family: var(--ccb-font-display);
+  font-size: 1.08rem;
+  line-height: 1.78;
+  overflow-wrap: break-word;
+}
+
+.reader-cover markdown > :first-child,
+.reader-body markdown > :first-child {
+  margin-top: 0;
+}
+
+.reader-cover markdown > :last-child,
+.reader-body markdown > :last-child {
+  margin-bottom: 0;
+}
+
+.reader-cover markdown p,
+.reader-body markdown p {
+  margin: 0 0 1.15em;
+  max-width: 68ch;
+}
+
+.reader-cover markdown blockquote,
+.reader-body markdown blockquote {
+  margin: 0 0 var(--ccb-space-3);
+  padding: 0.15rem 0 0.15rem 1.2rem;
+  border-left: 3px solid var(--ccb-accent);
+  color: var(--ccb-accent-strong);
+  font-size: clamp(1.2rem, 2.6vw, 1.5rem);
+  font-style: italic;
+  line-height: 1.5;
+}
+
+.reader-cover markdown blockquote p,
+.reader-body markdown blockquote p {
+  margin: 0;
+}
+
+.reader-cover markdown strong,
+.reader-body markdown strong {
+  color: var(--ccb-ink);
+  font-weight: 650;
+}
+
+.reader-cover markdown em,
+.reader-body markdown em {
+  font-style: italic;
+}
+
+.reader-cover markdown a,
+.reader-body markdown a {
+  color: var(--ccb-accent);
+  text-decoration-thickness: 0.08em;
+  text-underline-offset: 0.18em;
+}
+
+.reader-cover markdown a:hover,
+.reader-body markdown a:hover {
+  color: var(--ccb-accent-strong);
+}
+
+.reader-cover markdown ul,
+.reader-cover markdown ol,
+.reader-body markdown ul,
+.reader-body markdown ol {
+  margin: 0 0 1.15em;
+  padding-left: 1.45rem;
+}
+
+.reader-body markdown li {
+  margin-block: 0.28em;
+  padding-left: 0.15rem;
+}
+
+.reader-body markdown li::marker {
+  color: var(--ccb-accent);
+}
+
+.reader-body markdown h2 {
+  position: relative;
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin: 2.6em 0 0.8em;
+  padding-top: 0.9em;
+  border-top: 1px solid var(--ccb-line);
+  font-size: clamp(1.8rem, 3.6vw, 2.45rem);
+  line-height: 1.08;
+  letter-spacing: -0.025em;
+  scroll-margin-top: calc(var(--reader-toolbar-height) + 1.25rem);
+  outline: none;
+}
+
+.reader-body markdown h2:first-child {
+  margin-top: 0.4em;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.reader-body markdown h2:focus-visible {
+  outline: 2px solid var(--ccb-accent);
+  outline-offset: 6px;
+}
+
+.reader-heading__number {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  min-width: 1.8rem;
+  height: 1.8rem;
+  padding-inline: 0.35rem;
+  border-radius: 999px;
+  background: var(--ccb-accent-soft);
+  color: var(--ccb-accent);
+  font-family: var(--ccb-font-ui);
+  font-size: 0.68rem;
+  font-weight: 750;
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+  transform: translateY(-0.25em);
+}
+
+.reader-heading__anchor {
+  margin-left: 0.15rem;
+  color: var(--ccb-line-strong);
+  font-family: var(--ccb-font-ui);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  opacity: 0;
+  transition: opacity var(--ccb-motion-fast) var(--ccb-ease);
+}
+
+.reader-body markdown h2:hover .reader-heading__anchor,
+.reader-body markdown h2:focus-within .reader-heading__anchor,
+.reader-body markdown h3:hover .reader-heading__anchor,
+.reader-body markdown h3:focus-within .reader-heading__anchor {
+  opacity: 1;
+}
+
+.reader-body markdown h3 {
+  margin: 1.9em 0 0.55em;
+  font-size: clamp(1.22rem, 2.3vw, 1.5rem);
+  line-height: 1.22;
+  letter-spacing: -0.012em;
+  scroll-margin-top: calc(var(--reader-toolbar-height) + 1.25rem);
+  outline: none;
+}
+
+.reader-body markdown h3:focus-visible {
+  outline: 2px solid var(--ccb-accent);
+  outline-offset: 5px;
+}
+
+.reader-body markdown h4 {
+  margin: 1.6em 0 0.4em;
+  font-family: var(--ccb-font-ui);
+  font-size: 1.02rem;
+  font-weight: 700;
+  letter-spacing: -0.005em;
+}
+
+.reader-body markdown hr {
+  height: 1px;
+  margin: var(--ccb-space-4) 0;
+  border: 0;
+  background: var(--ccb-line);
+}
+
+.reader-body markdown code,
+.reader-cover markdown code {
+  padding: 0.12em 0.34em;
+  border: 1px solid var(--ccb-line);
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--ccb-canvas) 63%, white);
+  color: var(--ccb-ink);
+  font-family: var(--ccb-font-mono);
+  font-size: 0.86em;
+}
+
+.reader-body markdown pre {
+  max-width: 100%;
+  margin: 0 0 1.3em;
+  padding: var(--ccb-space-2);
+  overflow-x: auto;
+  border: 1px solid var(--ccb-line);
+  border-radius: var(--ccb-radius-md);
+  background: #1f2723;
+  color: #f5f1e8;
+  font-family: var(--ccb-font-mono);
+  font-size: 0.86rem;
+  line-height: 1.65;
+  tab-size: 2;
+}
+
+.reader-body markdown pre code {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-size: inherit;
+}
+
+.reader-table-scroll {
+  max-width: 100%;
+  margin: 0 0 1.4em;
+  overflow-x: auto;
+  border: 1px solid var(--ccb-line);
+  border-radius: var(--ccb-radius-md);
+  background: var(--ccb-surface-raised);
+}
+
+.reader-table-scroll:focus-visible {
+  outline: 2px solid var(--ccb-accent);
+  outline-offset: 2px;
+}
+
+.reader-body markdown table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--ccb-font-ui);
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.reader-body markdown th,
+.reader-body markdown td {
+  padding: 0.6rem 0.8rem;
+  border-bottom: 1px solid var(--ccb-line);
+  text-align: left;
+  vertical-align: top;
+}
+
+.reader-body markdown th {
+  background: color-mix(in srgb, var(--ccb-canvas) 58%, white);
+  color: var(--ccb-ink);
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.reader-body markdown tr:last-child td {
+  border-bottom: 0;
+}
+
+.reader-body markdown .katex-display {
+  max-width: 100%;
+  margin: 1.2em 0;
+  padding: 0.35em 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.reader-body markdown .katex {
+  font-size: 1.06em;
+}
+
+.reader-body markdown del {
+  color: var(--ccb-ink-muted);
+}
+
+@media (max-width: 44rem) {
+  .reader-cover markdown,
+  .reader-body markdown {
+    font-size: 1.03rem;
+    line-height: 1.72;
+  }
+
+  .reader-body markdown h2 {
+    margin-top: 2.2em;
+  }
+}
+
+@media print {
+  .reader-heading__anchor {
+    display: none !important;
+  }
+
+  .reader-body markdown pre,
+  .reader-table-scroll {
+    overflow: visible;
+    break-inside: avoid;
+  }
+
+  .reader-body markdown h2,
+  .reader-body markdown h3 {
+    break-after: avoid;
+  }
+
+  .reader-body markdown a {
+    color: inherit;
+    text-decoration: none;
+  }
+}

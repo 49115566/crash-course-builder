@@ -1,0 +1,54 @@
+@media print {
+  html,
+  body {
+    background: #ffffff;
+  }
+
+  body {
+    font-size: 11pt;
+  }
+
+  .site-header,
+  .site-footer,
+  ccb-key-banner,
+  ccb-toast-outlet,
+  .reader-toolbar,
+  .reader-aside,
+  .reader-back-to-top {
+    display: none !important;
+  }
+
+  .site-main {
+    padding: 0 !important;
+  }
+
+  .reader,
+  .reader-layout,
+  .reader-article {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    box-shadow: none;
+  }
+
+  .reader-hero h1 {
+    font-size: 28pt;
+  }
+
+  .reader-cover,
+  .reader-body,
+  .reader-hero,
+  .reader-end {
+    max-width: none;
+  }
+
+  .reader-end {
+    margin-top: 16pt;
+  }
+}
+
+@page {
+  margin: 18mm 16mm;
+}

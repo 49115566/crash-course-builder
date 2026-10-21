@@ -180,6 +180,14 @@ export const courseMutationResponseSchema = z.object({
 
 export type CourseMutationResponse = z.infer<typeof courseMutationResponseSchema>;
 
+export const courseDetailSchema = z.object({
+  meta: courseMetadataSchema,
+  outlineMarkdown: z.string(),
+  courseMarkdown: z.string(),
+});
+
+export type CourseDetail = z.infer<typeof courseDetailSchema>;
+
 export const deleteCourseResponseSchema = z.object({
   deletedId: z.uuid(),
 });

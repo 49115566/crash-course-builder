@@ -1,0 +1,161 @@
+<div class="reader" [class.reader--loading]="loading()" [attr.aria-busy]="loading()">
+  @if (loading()) {
+  <ccb-reader-skeleton />
+  } @else if (hasError()) {
+  <section class="reader-error" role="alert" aria-labelledby="reader-error-title">
+    <div class="reader-error__mark" aria-hidden="true">!</div>
+    <div class="reader-error__body">
+      <p class="ccb-eyebrow ccb-eyebrow--danger">Course unavailable</p>
+      <h1 id="reader-error-title">{{ errorTitle() }}</h1>
+      <p>{{ errorBody() }}</p>
+      @if (errorCode() === 'NOT_FOUND') {
+      <p class="reader-error__hint">
+        Courses are ordinary folders in your library. Nothing was changed by this failed read.
+      </p>
+      } @if (isMissingFiles()) {
+      <p class="reader-error__hint">
+        A course needs both <code>course.md</code> and <code>outline.md</code> to open.
+      </p>
+      }
+      <div class="reader-error__actions">
+        <a class="ccb-button ccb-button--primary" routerLink="/">Back to library</a>
+        <button type="button" class="ccb-button ccb-button--secondary" (click)="retry()">
+          Try again
+        </button>
+      </div>
+    </div>
+  </section>
+  } @else if (store.course(); as course) {
+  <header class="reader-toolbar">
+    <nav class="reader-breadcrumb" aria-label="Breadcrumb">
+      <ol>
+        <li><a routerLink="/">Library</a></li>
+        <li><span aria-hidden="true">/</span> {{ course.meta.subject.name }}</li>
+      </ol>
+    </nav>
+
+    <div class="reader-toolbar__tools">
+      <p class="reader-toolbar__stat">
+        <span aria-hidden="true" class="reader-toolbar__stat-mark"></span>
+        {{ course.meta.stats.readingMinutes }} min read
+      </p>
+      <p class="reader-toolbar__stat reader-toolbar__stat--sections">
+        {{ sectionCount() }} sections
+      </p>
+
+      <button
+        type="button"
+        class="reader-toolbar__contents"
+        aria-haspopup="dialog"
+        (click)="openContents()"
+      >
+        Contents
+      </button>
+
+      <button
+        type="button"
+        class="reader-toolbar__menu-button"
+        [cdkMenuTriggerFor]="courseMenu"
+        aria-label="Course actions"
+        aria-haspopup="menu"
+      >
+        <span aria-hidden="true">•••</span>
+      </button>
+
+      <ng-template #courseMenu>
+        <div class="ccb-menu" cdkMenu>
+          <button type="button" class="ccb-menu__item" cdkMenuItem (click)="printCourse()">
+            Print course
+          </button>
+          <button type="button" class="ccb-menu__item" cdkMenuItem (click)="copyLink()">
+            Copy course link
+          </button>
+          <div class="ccb-menu__separator" role="separator"></div>
+          <a class="ccb-menu__item" cdkMenuItem routerLink="/">Back to library</a>
+        </div>
+      </ng-template>
+    </div>
+
+    <span class="reader-toolbar__progress" aria-hidden="true" [style.width.%]="progress()"></span>
+  </header>
+
+  @if (course.courseMarkdown.trim().length === 0) {
+  <section class="reader-error reader-error--empty" aria-labelledby="reader-empty-title">
+    <div class="reader-error__body">
+      <p class="ccb-eyebrow">Empty course</p>
+      <h1 id="reader-empty-title">This course file has no content yet</h1>
+      <p>
+        <code>course.md</code> is empty. You can regenerate the course from the creation wizard, or
+        restore the file from a backup.
+      </p>
+      <div class="reader-error__actions">
+        <a class="ccb-button ccb-button--primary" routerLink="/">Back to library</a>
+      </div>
+    </div>
+  </section>
+  } @else {
+  <div class="reader-layout">
+    <article #article class="reader-article" aria-labelledby="course-title">
+      <header class="reader-hero">
+        <p class="ccb-eyebrow">{{ course.meta.subject.name }}</p>
+        <h1 id="course-title" tabindex="-1">{{ course.meta.title }}</h1>
+        <dl class="reader-hero__meta">
+          <div>
+            <dt>Reading time</dt>
+            <dd>{{ course.meta.stats.readingMinutes }} minutes</dd>
+          </div>
+          <div>
+            <dt>Updated</dt>
+            <dd>{{ course.meta.updatedAt | date: 'MMM d, y' }}</dd>
+          </div>
+        </dl>
+      </header>
+
+      <div class="reader-cover">
+        <ccb-markdown-view [markdown]="coverMarkdown()" [headingIds]="[]" />
+      </div>
+
+      <ccb-course-outline-card
+        [headings]="sectionHeadings()"
+        [activeId]="activeHeadingId()"
+        [readingMinutes]="course.meta.stats.readingMinutes"
+        (jump)="jumpTo($event)"
+      />
+
+      <div class="reader-body">
+        <ccb-markdown-view
+          [markdown]="bodyMarkdown()"
+          [headingIds]="headingIds()"
+          (rendered)="onBodyRendered($event)"
+        />
+      </div>
+
+      <footer class="reader-end" aria-label="End of course">
+        <span class="reader-end__rule" aria-hidden="true"></span>
+        <p>End of course</p>
+        <a class="ccb-button ccb-button--secondary" routerLink="/">Back to library</a>
+      </footer>
+    </article>
+
+    <aside class="reader-aside">
+      <ccb-reader-sidebar
+        [headings]="sectionHeadings()"
+        [activeId]="activeHeadingId()"
+        (jump)="jumpTo($event)"
+      />
+    </aside>
+  </div>
+
+  <button
+    type="button"
+    class="reader-back-to-top"
+    [class.is-visible]="showBackToTop()"
+    [attr.aria-hidden]="!showBackToTop()"
+    [attr.tabindex]="showBackToTop() ? 0 : -1"
+    aria-label="Back to top"
+    (click)="backToTop()"
+  >
+    <span aria-hidden="true">↑</span>
+  </button>
+  } }
+</div>

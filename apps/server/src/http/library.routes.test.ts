@@ -3,6 +3,7 @@ import path from 'node:path';
 
 import {
   apiSuccessSchema,
+  courseDetailSchema,
   deleteSubjectResponseSchema,
   libraryDataSchema,
   subjectMutationResponseSchema,
@@ -144,6 +145,62 @@ describe('library API', () => {
       code: 'CONFLICT',
       details: { reason: 'stale_order' },
     });
+  });
+
+  it('reads a saved course with exact file contents and no absolute paths', async () => {
+    const { app, libraryRoot } = await appContext();
+    const subject = subjectMutationResponseSchema.parse(
+      dataOf(
+        (await request(app).post('/api/subjects').send({ name: 'Computer Science' }).expect(201))
+          .body,
+      ),
+    ).subject;
+    const courseMarkdown = '# Vector Databases\n\n## 1. Foundations\n\nUses $x^2$.\n';
+    const outlineMarkdown = '# Vector Databases\n\n1. **Foundations**\n';
+    await seedCourse(
+      path.join(libraryRoot, 'Computer Science'),
+      makeCourseMetadata(IDS.courseA, { id: subject.id, name: 'Computer Science' }),
+      { courseMarkdown, outlineMarkdown },
+    );
+
+    const response = await request(app).get(`/api/courses/${IDS.courseA}`).expect(200);
+    const parsed = apiSuccessSchema(courseDetailSchema).parse(response.body as unknown);
+
+    expect(parsed.data.courseMarkdown).toBe(courseMarkdown);
+    expect(parsed.data.outlineMarkdown).toBe(outlineMarkdown);
+    expect(parsed.data.meta.id).toBe(IDS.courseA);
+    expect(JSON.stringify(response.body)).not.toContain(libraryRoot);
+  });
+
+  it('returns 404 for an unknown course and reports missing files safely', async () => {
+    const { app, libraryRoot } = await appContext();
+    const subject = subjectMutationResponseSchema.parse(
+      dataOf(
+        (await request(app).post('/api/subjects').send({ name: 'Incomplete' }).expect(201)).body,
+      ),
+    ).subject;
+    await seedCourse(
+      path.join(libraryRoot, 'Incomplete'),
+      makeCourseMetadata(IDS.courseA, { id: subject.id, name: 'Incomplete' }),
+      { courseMarkdown: null },
+    );
+
+    const unknown = await request(app).get(`/api/courses/${IDS.courseB}`).expect(404);
+    expect(errorOf(unknown.body).code).toBe('NOT_FOUND');
+
+    const missing = await request(app).get(`/api/courses/${IDS.courseA}`).expect(404);
+    expect(errorOf(missing.body)).toMatchObject({
+      code: 'NOT_FOUND',
+      details: { files: ['course.md'] },
+    });
+    expect(JSON.stringify(missing.body)).not.toContain(libraryRoot);
+  });
+
+  it('rejects malformed course ids', async () => {
+    const { app } = await appContext();
+
+    const response = await request(app).get('/api/courses/not-a-uuid').expect(400);
+    expect(errorOf(response.body).code).toBe('VALIDATION_FAILED');
   });
 
   it('moves and deletes courses', async () => {

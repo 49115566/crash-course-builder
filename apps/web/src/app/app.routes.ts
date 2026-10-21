@@ -10,6 +10,10 @@ export const routes: Routes = [
     loadChildren: () => import('./features/wizard/wizard.routes').then((m) => m.WIZARD_ROUTES),
   },
   {
+    path: 'courses/:id',
+    loadChildren: () => import('./features/reader/reader.routes').then((m) => m.READER_ROUTES),
+  },
+  {
     path: '**',
     redirectTo: '',
   },

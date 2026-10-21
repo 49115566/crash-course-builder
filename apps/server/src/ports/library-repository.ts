@@ -1,4 +1,5 @@
 import type {
+  CourseDetail,
   CourseMetadata,
   CourseSummary,
   LibraryData,
@@ -54,6 +55,7 @@ export interface FinalizeCourseResult {
 export interface LibraryRepository {
   initialize(): Promise<void>;
   scan(): Promise<LibrarySnapshot>;
+  readCourse(courseId: string): Promise<CourseDetail>;
   createSubject(name: string): Promise<SubjectMutationResult>;
   renameSubject(id: string, name: string): Promise<SubjectMutationResult>;
   reorderSubjects(subjectIds: string[]): Promise<{ subjectIds: string[]; warnings: ScanWarning[] }>;

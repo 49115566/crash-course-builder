@@ -10,6 +10,8 @@ export interface SeededCourse {
   audience: string;
   readingMinutes: number;
   folderName: string;
+  courseMarkdown?: string | null;
+  outlineMarkdown?: string | null;
 }
 
 export async function seedCourse(
@@ -56,12 +58,20 @@ export async function seedCourse(
     )}\n`,
     'utf8',
   );
-  await writeFile(path.join(coursePath, 'course.md'), '# Vector Databases\n\nA course.\n', 'utf8');
-  await writeFile(
-    path.join(coursePath, 'outline.md'),
-    '# Vector Databases\n\n1. Foundations\n',
-    'utf8',
-  );
+  if (course.courseMarkdown !== null) {
+    await writeFile(
+      path.join(coursePath, 'course.md'),
+      course.courseMarkdown ?? '# Vector Databases\n\nA course.\n',
+      'utf8',
+    );
+  }
+  if (course.outlineMarkdown !== null) {
+    await writeFile(
+      path.join(coursePath, 'outline.md'),
+      course.outlineMarkdown ?? '# Vector Databases\n\n1. Foundations\n',
+      'utf8',
+    );
+  }
 
   return course;
 }

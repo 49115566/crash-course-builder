@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { mkdir, readdir, rename } from 'node:fs/promises';
+import { mkdir, readdir, readFile, rename } from 'node:fs/promises';
 import path from 'node:path';
 
 import {
@@ -9,6 +9,7 @@ import {
   courseMetadataSchema,
   libraryIndexFileSchema,
   subjectMetadataSchema,
+  type CourseDetail,
   type CourseMetadata,
   type CourseSummary,
   type LibraryIndexFile,
@@ -147,6 +148,75 @@ export class FsLibraryRepository implements LibraryRepository {
       subjects,
       totalCourses: subjects.reduce((total, subject) => total + subject.courses.length, 0),
       warnings: scan.warnings,
+    };
+  }
+
+  async readCourse(courseId: string): Promise<CourseDetail> {
+    const scan = await this.scanInternal();
+    const located = this.findCourse(scan.subjects, courseId);
+
+    if (located === undefined) {
+      throw new LibraryError('NOT_FOUND', 'The course could not be found.');
+    }
+
+    const missing: string[] = [];
+    const unreadable: string[] = [];
+    let courseMarkdown: string | undefined;
+    let outlineMarkdown: string | undefined;
+
+    for (const fileName of ['course.md', 'outline.md'] as const) {
+      const filePath = path.join(located.course.folderPath, fileName);
+      let stats;
+
+      try {
+        stats = await lstatIfExists(filePath);
+      } catch (error) {
+        throw this.fsFailure(error, `The course file ${fileName} could not be inspected.`);
+      }
+
+      if (!stats.exists) {
+        missing.push(fileName);
+        continue;
+      }
+
+      if (!stats.isFile || stats.isSymbolicLink) {
+        unreadable.push(fileName);
+        continue;
+      }
+
+      try {
+        const contents = await readFile(filePath, 'utf8');
+
+        if (fileName === 'course.md') {
+          courseMarkdown = contents;
+        } else {
+          outlineMarkdown = contents;
+        }
+      } catch (error) {
+        const code = errorCode(error);
+
+        if (code === 'ENOENT') {
+          missing.push(fileName);
+          continue;
+        }
+
+        throw this.fsFailure(error, `The course file ${fileName} could not be read.`);
+      }
+    }
+
+    if (missing.length > 0 || unreadable.length > 0) {
+      const problems = [...missing, ...unreadable];
+      throw new LibraryError(
+        'NOT_FOUND',
+        'This course is incomplete on disk. Its course.md and outline.md files are required to open it.',
+        { files: problems },
+      );
+    }
+
+    return {
+      meta: located.course.metadata,
+      outlineMarkdown: outlineMarkdown ?? '',
+      courseMarkdown: courseMarkdown ?? '',
     };
   }
 

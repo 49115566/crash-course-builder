@@ -60,7 +60,8 @@ avoids duplicate session loads.
 - `/courses/new/:sessionId` is a redirect route that chooses the correct step from status and stage.
 - A read-only outline view remains reachable after writing starts, so the disabled-regeneration
   explanation is visible without exposing an action the server would reject.
-- The reader route and “Read course” action are intentionally deferred to Milestone 5.
+- The reader route is lazy-loaded from `/courses/:id`. Library cards and the wizard’s “Read course”
+  action link to it.
 
 SSE handling has two layers:
 
@@ -73,6 +74,27 @@ SSE handling has two layers:
 Token deltas are buffered client-side for roughly 50 ms in addition to the server's 50 ms
 coalescing. This keeps rendering and screen-reader activity calm. Section boundaries and completion
 are announced via `LiveAnnouncer`; individual tokens are not.
+
+## Reader
+
+The reader is a lazy-loaded route family under `/courses/:id`. It fetches the course detail from the
+server and never writes to the library.
+
+- `ngx-markdown` renders the on-disk Markdown. A custom `marked` renderer drops raw HTML and images
+  before rendering.
+- A custom DOMPurify sanitizer is supplied through ngx-markdown’s `SANITIZE` token. It uses a strict
+  allowlist, removes remote media and unsafe URI schemes, and strips style and event attributes.
+- KaTeX runs after sanitization on the sanitized DOM, with `trust: false`, bounded expansion, and
+  skipped code blocks. This keeps KaTeX-generated inline styles outside the untrusted Markdown
+  boundary.
+- The canonical H2 headings in `course.md` provide the table of contents and heading anchors. The
+  leading H1 is shown through metadata in the hero, while the remaining cover content is rendered
+  from the file.
+- Scrollspy, the progress line, and back-to-top controls are ephemeral. Nothing is written to
+  storage and no completion state is tracked.
+- The “In this course” card is always present at the top. A sticky sidebar appears on wide screens
+  and a focus-trapped CDK dialog provides the contents drawer on smaller screens.
+- Print styles hide application chrome and controls, leaving the course document.
 
 ## Provider
 

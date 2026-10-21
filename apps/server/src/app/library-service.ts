@@ -1,4 +1,4 @@
-import type { ScanWarning, SubjectSummary } from '@ccb/contracts';
+import type { CourseDetail, ScanWarning, SubjectSummary } from '@ccb/contracts';
 
 import { LibraryError } from '../domain/library-errors.js';
 import type {
@@ -48,6 +48,10 @@ export class LibraryService {
 
   async getLibrary(): Promise<LibrarySnapshot> {
     return this.runWithReady(() => this.repository.scan());
+  }
+
+  async getCourse(courseId: string): Promise<CourseDetail> {
+    return this.runWithReady(() => this.repository.readCourse(courseId));
   }
 
   async getSubject(id: string): Promise<SubjectSummary> {
